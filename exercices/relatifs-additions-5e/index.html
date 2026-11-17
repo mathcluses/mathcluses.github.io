@@ -169,8 +169,8 @@ button:disabled{opacity:.4;cursor:not-allowed}
         if(i>0)o.push(kind==="add"?"+":kind==="sub"?"−":(Math.random()<0.5?"+":"−"));
         e.push(i===0||o[i]==="+"?a[i]:-a[i]);
       }
-      ok=true;
-      if(kind==="mix")ok=o.indexOf("+")>0&&o.indexOf("−")>0&&e.some(function(x){return x>0})&&e.some(function(x){return x<0});
+      ok=!(simple&&n===2&&e[0]>0&&e[1]>0);   // écriture simplifiée : jamais « 8 + 9 » (deux nombres positifs)
+      if(kind==="mix")ok=ok&&o.indexOf("+")>0&&o.indexOf("−")>0&&e.some(function(x){return x>0})&&e.some(function(x){return x<0});
     }while(!ok);
     var R=e.reduce(function(s,x){return s+x},0),parts=[],txt=[];
     // Énoncé : écriture complète (+3) − (−5)… ou simplifiée 3 + 5…
