@@ -48,7 +48,7 @@ var SITE = {
 var EXERCICES = [
 
   {
-    titre: "Calcul : relatifs, fractions, puissances, notation scientifique",
+    titre: "Relatifs, fractions, puissances",
     description: "Séries de 10 questions avec correction détaillée, ou parcours en 20 étapes où chaque type de calcul doit être réussi avant de passer au suivant.",
     niveaux: ["3e"],
     themes: ["Fractions", "Puissances"],
