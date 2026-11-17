@@ -128,7 +128,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
     <button id="again">Nouvelle série</button>
   </section>
 
-  <p class="note">Écris ton résultat avec le signe − s’il est négatif, et une virgule pour un nombre décimal (par exemple −3,5). Les 10 questions d’une série sont réparties équitablement entre les types cochés. Option « Écriture simplifiée » : toutes les questions sont écrites sans parenthèses (−7 + 4 − 2 au lieu de (−7) + (+4) − (+2)), et, pour les additions et les mélanges, le premier nombre est négatif. Option « Nombres décimaux » : tous les nombres ont un seul chiffre après la virgule. Chaque question n’a qu’un essai ; « Corriger sans valider » affiche la correction sans compter la question, et une autre du même type est posée.</p>
+  <p class="note">Écris ton résultat avec le signe − s’il est négatif, et une virgule pour un nombre décimal (par exemple −3,5). Les 10 questions d’une série sont réparties équitablement entre les types cochés. Option « Écriture simplifiée » : toutes les questions sont écrites sans parenthèses (−7 + 4 − 2 au lieu de (−7) + (+4) − (+2)), et, pour les additions, le premier nombre est négatif. Un mélange n’est jamais composé uniquement de nombres positifs additionnés. Option « Nombres décimaux » : tous les nombres ont un seul chiffre après la virgule. Chaque question n’a qu’un essai ; « Corriger sans valider » affiche la correction sans compter la question, et une autre du même type est posée.</p>
 </main>
 
 <script>
@@ -165,11 +165,12 @@ button:disabled{opacity:.4;cursor:not-allowed}
       a=[];o=[""];e=[];
       for(i=0;i<n;i++){
         var m;if(d===1)m=rnd(1,N);else do{m=rnd(1,N*10-1)}while(m%10===0);   // décimaux : jamais de chiffre 0 après la virgule
-        a.push(m*((simple&&kind!=="sub"&&i===0)||Math.random()<0.5?-1:1));   // additions et mélanges en écriture simplifiée : le premier nombre est toujours négatif (pas de « 3 + 5 »)
+        a.push(m*((simple&&kind==="add"&&i===0)||Math.random()<0.5?-1:1));   // additions en écriture simplifiée : le premier nombre est toujours négatif (pas de « 3 + 5 »)
         if(i>0)o.push(kind==="add"?"+":kind==="sub"?"−":(Math.random()<0.5?"+":"−"));
         e.push(i===0||o[i]==="+"?a[i]:-a[i]);
       }
       ok=!(simple&&n===2&&e[0]>0&&e[1]>0);   // écriture simplifiée : jamais « 8 + 9 » (deux nombres positifs)
+      // mélanges : au moins un terme positif et un terme négatif (donc jamais une simple somme de nombres positifs)
       if(kind==="mix")ok=ok&&o.indexOf("+")>0&&o.indexOf("−")>0&&e.some(function(x){return x>0})&&e.some(function(x){return x<0});
     }while(!ok);
     var R=e.reduce(function(s,x){return s+x},0),parts=[],txt=[];
