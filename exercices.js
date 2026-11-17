@@ -55,5 +55,13 @@ var EXERCICES = [
     format: "Séries de 10 questions · Mode progression",
     url: "exercices/calcul-relatifs-fractions-puissances/index.html"
   }
+  {
+    titre: "Nombres relatifs : additions et soustractions",
+    description: "Additions, soustractions et mélanges de 4 à 7 nombres relatifs, avec options écriture simplifiée et nombres décimaux.",
+    niveaux: ["5e"],
+    themes: ["Nombres relatifs"],
+    format: "Séries de 10 questions",
+    url: "exercices/relatifs-additions-5e/index.html"
+  }
 
 ];
