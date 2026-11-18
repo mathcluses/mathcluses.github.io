@@ -30,7 +30,7 @@ details.sel{border:1px solid var(--line);background:var(--paper);border-radius:6
 details.sel:not([open]){padding-bottom:.2rem}
 summary{font-weight:700;cursor:pointer;padding:.4rem 0}
 summary:focus-visible{outline:3px solid #4a7bdc;outline-offset:2px}
-.grp{margin-top:.5rem}.grp>b{display:block;color:var(--muted);font-weight:600}
+.grp{margin-top:.5rem}.grp>b{display:block;color:var(--muted);font-weight:600;text-decoration:underline;text-underline-offset:.2em}
 .opts{display:flex;flex-wrap:wrap;gap:.2rem 1.2rem}
 .opts label{display:flex;align-items:center;gap:.4rem;cursor:pointer}
 .opts input{accent-color:var(--btn);width:1.05rem;height:1.05rem}
@@ -91,7 +91,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 -->
 <main>
   <p class="retour"><a href="../../../index.html">← Tous les exercices</a></p>
-  <header class="head"><h1>5eme : additions et soustractions de relatifs</h1></header>
+  <header class="head"><button class="sec" id="mode">Mode progression</button><h1>5eme : additions et soustractions de relatifs</h1></header>
   <details class="sel" id="sel">
     <summary>Types d’exercices (série de 10 questions) : <span id="cnt"></span></summary>
     <div id="opts">
@@ -107,6 +107,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
   <section class="card" id="card" aria-labelledby="consigne">
     <div class="top"><b id="prog"></b><button class="sec" id="restart">Recommencer la série</button></div>
+    <progress id="pbar" class="pbar hide" max="20" value="0" aria-label="Avancement du mode progression"></progress>
     <p class="muted" id="consigne"></p>
     <div id="q"></div>
     <div class="row">
@@ -128,7 +129,14 @@ button:disabled{opacity:.4;cursor:not-allowed}
     <button id="again">Nouvelle série</button>
   </section>
 
-  <p class="note">Écris ton résultat avec le signe − s’il est négatif, et une virgule pour un nombre décimal (par exemple −3,5). Les 10 questions d’une série sont réparties équitablement entre les types cochés. Option « Écriture simplifiée » : toutes les questions sont écrites sans parenthèses (−7 + 4 − 2 au lieu de (−7) + (+4) − (+2)), et, pour les additions, le premier nombre est négatif. Un mélange n’est jamais composé uniquement de nombres positifs additionnés. Option « Nombres décimaux » : tous les nombres ont un seul chiffre après la virgule. Chaque question n’a qu’un essai ; « Corriger sans valider » affiche la correction sans compter la question, et une autre du même type est posée.</p>
+  <!-- Écran de fin du mode progression (modifier le message de félicitations ici) -->
+  <section class="card hide" id="pend" aria-labelledby="pmsg">
+    <p class="muted">Mode progression terminé</p>
+    <p class="pmsg" id="pmsg">Bravo ! Les bases sont comprises, n’hésite pas à retravailler les exercices qui te semblent délicats dans des séries de 10 questions.</p>
+    <div class="row"><button id="pback">Faire des séries de 10 questions</button><button id="pagain" class="sec">Recommencer la progression</button></div>
+  </section>
+
+  <p class="note">Écris ton résultat avec le signe − s’il est négatif, et une virgule pour un nombre décimal (par exemple −3,5). Les 10 questions d’une série sont réparties équitablement entre les types cochés. Option « Écriture simplifiée » : toutes les questions sont écrites sans parenthèses (la soustraction d’un nombre négatif n’est pas concernée) (−7 + 4 − 2 au lieu de (−7) + (+4) − (+2)), et, pour les additions, le premier nombre est négatif. Un mélange n’est jamais composé uniquement de nombres positifs additionnés. Option « Nombres décimaux » : tous les nombres ont un seul chiffre après la virgule. Mode progression : une étape par type de calcul, dans l’ordre ; une question ratée est suivie d’une autre du même type, jusqu’à la réussite. Chaque question n’a qu’un essai ; « Corriger sans valider » affiche la correction sans compter la question, et une autre du même type est posée.</p>
 </main>
 
 <script>
@@ -159,17 +167,25 @@ button:disabled{opacity:.4;cursor:not-allowed}
   // build : fabrique une question. kind : "add" (additions), "sub" (soustractions) ou "mix" (mélanges de 4 à 7 nombres) ;
   // simple : vrai = énoncé écrit sans parenthèses ; dec : vrai = nombres décimaux (un chiffre après la virgule).
   // Le calcul est a1 o2 a2 o3 a3 … (o = + ou −, chaque a = nombre relatif) ; e[i] = a[i] ou −a[i] : le calcul devient une somme de termes signés.
-  function build(kind,simple,dec){
-    var d=dec?10:1,n=kind==="mix"?rnd(4,7):2,N=kind==="mix"?12:20,a,o,e,i,ok;
+  // force (mode progression, facultatif) : {a:[s1,s2]} impose le signe des deux nombres en écriture complète ; {e:[s1,s2]} impose le signe
+  // des deux termes en écriture simplifiée (1 = positif, −1 = négatif) ; {n:k} impose le nombre de termes ; {partial:true} : « 8 − (−5) », écriture
+  // simplifiée où la parenthèse du nombre négatif soustrait est conservée (la correction apprend à la supprimer).
+  function build(kind,simple,dec,force){
+    var d=dec?10:1,n=force&&force.n||(kind==="mix"?rnd(4,7):2),N=kind==="mix"?12:20,a,o,e,i,ok,partial=!!(force&&force.partial);
     do{
       a=[];o=[""];e=[];
       for(i=0;i<n;i++){
         var m;if(d===1)m=rnd(1,N);else do{m=rnd(1,N*10-1)}while(m%10===0);   // décimaux : jamais de chiffre 0 après la virgule
-        a.push(m*((simple&&kind==="add"&&i===0)||Math.random()<0.5?-1:1));   // additions en écriture simplifiée : le premier nombre est toujours négatif (pas de « 3 + 5 »)
+        var fs=force&&(force.a||force.e)&&i<2?(force.a||force.e)[i]:0;   // signe imposé (progression)
         if(i>0)o.push(kind==="add"?"+":kind==="sub"?"−":(Math.random()<0.5?"+":"−"));
+        // écriture simplifiée : elle ne concerne pas la soustraction d’un nombre négatif (on ne soustrait que des nombres positifs) ;
+        // additions : le premier nombre est toujours négatif (pas de « 3 + 5 »)
+        a.push(m*(fs||(simple&&i>0&&o[i]==="−"?1:((simple&&kind==="add"&&i===0)||Math.random()<0.5?-1:1))));
         e.push(i===0||o[i]==="+"?a[i]:-a[i]);
       }
-      ok=!(simple&&n===2&&e[0]>0&&e[1]>0);   // écriture simplifiée : jamais « 8 + 9 » (deux nombres positifs)
+      ok=!(simple&&!partial&&n===2&&e[0]>0&&e[1]>0);   // écriture simplifiée : jamais « 8 + 9 » (deux nombres positifs)
+      // additions de plus de 2 nombres : au moins un nombre positif et un nombre négatif
+      if(kind==="add"&&n>2)ok=ok&&e.some(function(x){return x>0})&&e.some(function(x){return x<0});
       // mélanges : au moins un terme positif et un terme négatif (donc jamais une simple somme de nombres positifs)
       if(kind==="mix")ok=ok&&o.indexOf("+")>0&&o.indexOf("−")>0&&e.some(function(x){return x>0})&&e.some(function(x){return x<0});
     }while(!ok);
@@ -177,7 +193,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
     // Énoncé : écriture complète (+3) − (−5)… ou simplifiée 3 + 5…
     for(i=0;i<n;i++){
       if(simple){
-        var t=i===0?fm(e[0],d):SG(e[i])+" "+fm(abs(e[i]),d);
+        var t=i===0?fm(e[0],d):(partial&&o[i]==="−"&&a[i]<0)?"− ("+fm(a[i],d)+")":SG(e[i])+" "+fm(abs(e[i]),d);
         parts.push(sp(t));txt.push(t);
       }else{
         var t2=i===0?Q(a[0],d):o[i]+" "+Q(a[i],d);
@@ -185,32 +201,57 @@ button:disabled{opacity:.4;cursor:not-allowed}
       }
     }
     var stmt=txt.join(" "),sx=e.map(function(x,j){return j===0?fm(x,d):SG(x)+" "+fm(abs(x),d)}).join(" "),st=[];
-    // Étape 1 : écriture simplifiée
+    // Correction détaillée : une étape par égalité de la ligne de correction
+    var sumf=e.map(function(x){return Q(x,d)}).join(" + ");
     if(!simple){
       var it=[];
-      for(i=0;i<n;i++){
-        if(i===0)it.push(Q(a[0],d)+" s’écrit "+fm(a[0],d));
-        else it.push(o[i]+" "+Q(a[i],d)+" devient "+SG(e[i])+" "+fm(abs(a[i]),d));
-      }
-      st.push("On supprime les parenthèses : "+it.join(" ; ")+". (Soustraire un nombre, c’est ajouter son opposé.) L’expression s’écrit donc : "+sx+".");
+      for(i=1;i<n;i++)if(o[i]==="−")it.push("− "+Q(a[i],d)+" devient + "+Q(-a[i],d));
+      if(it.length)st.push("Soustraire un nombre, c’est ajouter son opposé : "+it.join(" ; ")+". Le calcul devient une addition de nombres relatifs : "+sumf+".");
+    }else if(partial){
+      st.push("Soustraire un nombre négatif revient à ajouter son opposé : − ("+fm(a[1],d)+") devient + "+Q(-a[1],d)+". On écrit chaque nombre avec son signe : "+sumf+".");
     }else{
-      st.push("Chaque nombre est précédé de son signe : on lit l’expression comme une somme de nombres relatifs : "+sx+" = "+e.map(function(x){return Q(x,d)}).join(" + ")+".");
+      st.push("Chaque nombre est précédé de son signe : on lit l’expression comme une addition de nombres relatifs : "+sumf+".");
     }
-    // Étapes suivantes
     if(n===2)st.push(rule2(e[0],e[1],d));
     else{
       var ps=e.filter(function(x){return x>0}),ns=e.filter(function(x){return x<0}),
         sp1=ps.reduce(function(s,x){return s+x},0),sn1=ns.reduce(function(s,x){return s+x},0);
-      st.push("On regroupe les nombres de même signe. Les positifs : "+ps.map(function(x){return fm(x,d)}).join(" + ")+" = "+fm(sp1,d)+". Les négatifs : "+ns.map(function(x,j){return j===0?fm(x,d):"− "+fm(abs(x),d)}).join(" ")+" = "+fm(sn1,d)+" (on additionne les distances à zéro et on garde le signe moins).");
-      st.push("Il reste à calculer "+fm(sp1,d)+" + "+P(sn1,d)+". "+rule2(sp1,sn1,d));
+      st.push("On regroupe les nombres de même signe. "+
+        (ps.length>1?"Les positifs : "+ps.map(function(x){return fm(x,d)}).join(" + ")+" = "+fm(sp1,d)+".":"Le seul nombre positif est "+fm(sp1,d)+".")+" "+
+        (ns.length>1?"Les négatifs : "+ns.map(function(x,j){return j===0?fm(x,d):"− "+fm(abs(x),d)}).join(" ")+" = "+fm(sn1,d)+" (on additionne les distances à zéro et on garde le signe moins).":"Le seul nombre négatif est "+fm(sn1,d)+".")+
+        " Il reste "+Q(sp1,d)+" + "+Q(sn1,d)+".");
+      st.push(rule2(sp1,sn1,d));
     }
     st.push("Donc "+stmt+" = "+fm(R,d)+".");
-    return{mode:"num",lab:"Calcule.",lbl:"Réponse",html:parts.join("")+sp("=")+sp("?"),n:R,d:d,steps:st};
+    // Correction en une ligne : énoncé = somme de relatifs (+…) ou (−…) (les soustractions deviennent des additions) = (somme des positifs) + (somme des négatifs) = résultat
+    var cs=[stmt,e.map(function(x){return Q(x,d)}).join(" + ")];
+    if(n>2){var pp=e.filter(function(x){return x>0}).reduce(function(s,x){return s+x},0),nn=e.filter(function(x){return x<0}).reduce(function(s,x){return s+x},0);cs.push(Q(pp,d)+" + "+Q(nn,d))}
+    cs.push(fm(R,d));
+    var ch=cs.filter(function(s,j){return j===0||s!==cs[j-1]});
+    return{chain:ch.map(sp).join('<span class="eq"> = </span>'),mode:"num",lab:"Calcule.",lbl:"Réponse",html:parts.join("")+sp("=")+sp("?"),n:R,d:d,steps:st,a:a,o:o};   // a et o : nombres et opérateurs (utiles aux tests)
   }
   var G={};
   G.add=function(s,dc){return build("add",s,dc)};
   G.sub=function(s,dc){return build("sub",s,dc)};
   G.mix=function(s,dc){return build("mix",s,dc)};
+  // Générateurs du mode progression : signes imposés, nombres entiers. Écriture complète : p1 à p7 ; écriture simplifiée : s1 à s4 ;
+  // additions de 3 à 7 nombres : a3 à a7 ; mélanges de 5 et 6 nombres : m5, m6 (complets) et ms5, ms6 (sans parenthèses).
+  G.p1=function(){return build("add",false,false,{a:[1,1]})};
+  G.p2=function(){return build("add",false,false,{a:[-1,-1]})};
+  G.p3=function(){return build("add",false,false,{a:[1,-1]})};
+  G.p4=function(){return build("add",false,false,{a:[-1,1]})};
+  G.p5=function(){return build("sub",false,false,{a:[1,1]})};
+  G.p6=function(){return build("sub",false,false,{a:[-1,1]})};
+  G.p7=function(){return build("sub",false,false,{a:[-1,-1]})};
+  G.s1=function(){return build("add",true,false,{e:[1,-1]})};    // 8 − 5
+  G.s2=function(){return build("add",true,false,{e:[-1,1]})};    // −8 + 5
+  G.s3=function(){return build("sub",true,false,{a:[-1,-1],partial:true})};   // −8 − (−5)
+  G.s4=function(){return build("sub",true,false,{a:[1,-1],partial:true})};    // 8 − (−5)
+  [3,4,5,6,7].forEach(function(k){G["a"+k]=function(){return build("add",false,false,{n:k})}});   // additions de k nombres (écriture complète)
+  [5,6].forEach(function(k){
+    G["m"+k]=function(){return build("mix",false,false,{n:k})};
+    G["ms"+k]=function(){return build("mix",true,false,{n:k})};
+  });
 
   // ===== RÉPONSES : affichage et lecture de la saisie =====
   function ans(q){return fm(q.n,q.d)}
@@ -227,6 +268,28 @@ button:disabled{opacity:.4;cursor:not-allowed}
   // ===== DÉROULEMENT D’UNE SÉRIE =====
   // cur : question en cours ; solved : question terminée ; results : réponses de la série ; plan : les 10 questions prévues {k, dec, simple}
   var cur,solved,results=[],plan=[];
+  // MODE PROGRESSION : progMode = mode actif ; progIdx = étape en cours ; advance = la dernière réponse était juste (→ étape suivante).
+  // PSTEPS : liste ordonnée des étapes (k = nom du générateur G.xxx, l = intitulé affiché). Pour ajouter, retirer ou réordonner une étape,
+  // modifier cette liste : la barre d’avancement et les « Étape n sur N » s’adaptent.
+  var progMode=false,progIdx=0,advance=false;
+  var PSTEPS=[
+    {k:"p1",l:"Addition de deux positifs"},
+    {k:"p2",l:"Addition de deux négatifs"},
+    {k:"p3",l:"Addition d’un positif et d’un négatif"},
+    {k:"p4",l:"Addition d’un négatif et d’un positif"},
+    {k:"p5",l:"Positif moins positif"},
+    {k:"p6",l:"Négatif moins positif"},
+    {k:"p7",l:"Négatif moins négatif"},
+    {k:"s1",l:"Écriture simplifiée : positif moins positif"},
+    {k:"s2",l:"Écriture simplifiée : négatif plus positif"},
+    {k:"s3",l:"Écriture simplifiée : négatif moins négatif"},
+    {k:"s4",l:"Écriture simplifiée : positif moins négatif"}];
+  [3,4,5,6,7].forEach(function(k){PSTEPS.push({k:"a"+k,l:"Addition de "+k+" relatifs"})});
+  [5,6].forEach(function(k){
+    PSTEPS.push({k:"m"+k,l:"Mélange de "+k+" nombres"});
+    PSTEPS.push({k:"ms"+k,l:"Écriture simplifiée : mélange de "+k+" nombres"});
+  });
+  $("pbar").max=PSTEPS.length;
   // types : types cochés (les options ne comptent pas) ; si rien n’est coché : additions
   function types(){
     var t=[].slice.call(document.querySelectorAll("#opts input:checked:not([data-opt])")).map(function(e){return e.value});
@@ -243,10 +306,11 @@ button:disabled{opacity:.4;cursor:not-allowed}
   function lock(v){$("rep").disabled=v;$("check").disabled=v;$("show").disabled=v}
   // nextQ : pose la question suivante. noFocus : vrai quand on change les cases (le curseur ne va pas dans le champ, sinon la page défile).
   function nextQ(noFocus){
-    var p=plan[results.length];
-    cur=G[p.k](p.simple,p.dec);
+    if(progMode)cur=G[PSTEPS[progIdx].k]();
+    else{var p=plan[results.length];cur=G[p.k](p.simple,p.dec)}
     solved=false;
-    $("prog").textContent="Question "+(results.length+1)+" sur 10";
+    $("prog").textContent=progMode?"Étape "+(progIdx+1)+" sur "+PSTEPS.length+" : "+PSTEPS[progIdx].l:"Question "+(results.length+1)+" sur 10";
+    $("pbar").className=progMode?"pbar":"pbar hide";$("pbar").value=progIdx;
     $("consigne").textContent=cur.lab;
     $("q").innerHTML=cur.html;
     $("replab").textContent=cur.lbl;
@@ -256,22 +320,23 @@ button:disabled{opacity:.4;cursor:not-allowed}
     $("fb").className="";$("fb").innerHTML="";
     if(!noFocus)$("rep").focus({preventScroll:true});
   }
-  function stepsHTML(q){return"<ol>"+q.steps.map(function(s){return"<li>"+s+"</li>"}).join("")+"</ol>"}
+  function stepsHTML(q){return'<p class="chain">'+q.chain+'</p><details class="det"><summary>Correction détaillée</summary><ol class="dl">'+q.steps.map(function(s){return"<li>"+s+"</li>"}).join("")+"</ol></details>"}
   // fin : enregistre une réponse validée et affiche la correction
   function fin(ok,raw){
     solved=true;
-    results.push({q:cur,ok:ok,raw:raw});
+    if(!progMode)results.push({q:cur,ok:ok,raw:raw});
+    advance=ok;
     lock(true);
     $("fb").className=ok?"ok":"ko";
-    $("fb").innerHTML='<div class="verdict">'+(ok?"Exact.":"Réponse attendue : "+ans(cur))+'</div><p class="ct">Correction</p>'+stepsHTML(cur);
-    $("next").textContent=results.length===10?"Voir ma note":"Question suivante";
+    $("fb").innerHTML='<div class="verdict">'+(ok?"Exact.":"Réponse attendue : "+ans(cur))+'</div><p class="ct">Correction</p>'+stepsHTML(cur)+(progMode&&!ok?'<p class="muted">Une autre question du même type va être posée.</p>':"");
+    $("next").textContent=progMode?(ok?(progIdx===PSTEPS.length-1?"Terminer":"Étape suivante"):"Autre question du même type"):(results.length===10?"Voir ma note":"Question suivante");
     $("next").disabled=false;$("next").focus({preventScroll:true});
   }
   // skip : bouton « Corriger sans valider » : correction affichée, question non comptée, une autre du même type sera posée
   function skip(){
     if(solved)return;
     $("sel").open=false;
-    solved=true;lock(true);
+    solved=true;advance=false;lock(true);
     $("fb").className="info";
     $("fb").innerHTML='<div class="verdict">Réponse attendue : '+ans(cur)+'</div><p class="ct">Correction</p>'+stepsHTML(cur)+'<p class="muted">Cette question n’est pas comptée : une autre question du même type va être posée.</p>';
     $("next").textContent="Autre question du même type";
@@ -300,19 +365,45 @@ button:disabled{opacity:.4;cursor:not-allowed}
     results=[];plan=makePlan();
     var n=document.querySelectorAll("#opts input:checked:not([data-opt])").length;
     $("cnt").textContent=n+" coché"+(n>1?"s":"");
-    $("end").className="card hide";$("card").className="card";
+    $("end").className="card hide";$("pend").className="card hide";$("card").className="card";
     nextQ(noFocus);
   }
+  // startProg / showProgEnd / setMode : mode progression (démarrage, écran final, bascule avec les séries)
+  function startProg(){
+    progIdx=0;results=[];
+    $("end").className="card hide";$("pend").className="card hide";$("card").className="card";
+    nextQ();
+  }
+  function showProgEnd(){
+    $("card").className="card hide";$("pend").className="card";solved=false;
+    $("pback").focus({preventScroll:true});
+  }
+  function setMode(p){
+    progMode=p;
+    $("sel").classList.toggle("hide",p);
+    $("mode").textContent=p?"Séries de 10 questions":"Mode progression";
+    $("restart").textContent=p?"Recommencer la progression":"Recommencer la série";
+    if(p)startProg();else start();
+  }
+  $("mode").addEventListener("click",function(){setMode(!progMode)});
+  $("pagain").addEventListener("click",startProg);
+  $("pback").addEventListener("click",function(){setMode(false)});
 
   // ===== BOUTONS ET ÉVÉNEMENTS =====
   $("check").addEventListener("click",check);
   $("show").addEventListener("click",skip);
-  $("next").addEventListener("click",function(){results.length===10?showEnd():nextQ()});
+  $("next").addEventListener("click",function(){
+    if(progMode){
+      if(advance){progIdx++;if(progIdx>=PSTEPS.length){showProgEnd();return}}
+      nextQ();return;
+    }
+    results.length===10?showEnd():nextQ();
+  });
   $("rep").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();e.stopPropagation();check()}});
   document.addEventListener("keydown",function(e){
     if(e.key==="Enter"&&solved&&$("card").className.indexOf("hide")<0){e.preventDefault();$("next").click()}});
   $("opts").addEventListener("change",function(){start(true)}); // pas de focus : évite que la page « saute » vers le champ de réponse
-  $("restart").addEventListener("click",function(){start()});
+  $("restart").addEventListener("click",function(){progMode?startProg():start()});
   $("again").addEventListener("click",function(){
     [].forEach.call(document.querySelectorAll("#opts input"),function(e){e.checked=e.hasAttribute("data-def")});
     start();
