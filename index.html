@@ -52,6 +52,14 @@ a:focus-visible,button:focus-visible{outline:3px solid #4a7bdc;outline-offset:2p
 .tag{font-size:.82rem;padding:.05rem .5rem;border-radius:4px;border:1px solid var(--line)}
 .tag.niv{font-weight:700}
 .tag.brouillon{border-style:dashed;color:var(--ko)}
+.carte.bientot{opacity:.55;border-left-style:dashed}
+.groupes h2{font-size:1.2rem;margin:1.4rem 0 .6rem}
+.groupes .liste{grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr));gap:.6rem}
+.groupes .carte{padding:.6rem .8rem;gap:.2rem}
+.groupes .carte h2{font-size:1rem}
+.groupes .tags{padding-top:0}
+.groupes .tag{font-size:.75rem}
+div.carte.bientot:hover{border-color:var(--line)}
 .vide{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:1rem}
 .vide button{font:inherit;margin-left:.5rem;padding:.3rem .8rem;border-radius:6px;cursor:pointer;border:2px solid var(--btn);background:var(--btn);color:var(--btn-text)}
 
@@ -79,11 +87,14 @@ a:focus-visible,button:focus-visible{outline:3px solid #4a7bdc;outline-offset:2p
 
   <p class="muted" id="compte" aria-live="polite"></p>
   <ul class="liste" id="liste"></ul>
+  <div class="groupes" id="groupes"></div>
   <p class="vide hide" id="vide"><span id="videtxt"></span><button type="button" id="raz">Tout afficher</button></p>
 </main>
 
 <!-- Les données : un fichier à part, facile à modifier (voir le mode d'emploi dans LISEZ-MOI.txt) -->
 <script src="exercices.js"></script>
+<!-- Questions flash 6e : la liste des chapitres est dans ce fichier (un chapitre = une carte, grisée tant qu'il n'est pas prêt) -->
+<script src="6eme/questions-flash/chapitres.js"></script>
 <script>
 (function(){
   var $=function(i){return document.getElementById(i)};
@@ -131,7 +142,18 @@ a:focus-visible,button:focus-visible{outline:3px solid #4a7bdc;outline-offset:2p
     box.appendChild(st);box.appendChild(ul);box.className="alertes";
   }
 
+  // Questions flash 6e : une carte par chapitre, lue dans 6eme/questions-flash/chapitres.js.
+  // Un chapitre pas encore prêt (pret: false) donne une carte grisée « En préparation », visible seulement
+  // quand un niveau est choisi (pour ne pas encombrer « Tous niveaux »).
+  if(window.CHAPITRES_6E&&Array.isArray(window.CHAPITRES_6E))window.CHAPITRES_6E.forEach(function(d){
+    (d.chapitres||[]).forEach(function(c){
+      items.push({titre:"6eme Questions flash : "+c.titre,court:c.titre,niveaux:["6eme"],themes:c.themes||[],domaine:d.domaine,flash:true,
+                  url:"6eme/questions-flash/"+c.dossier+"/index.html",bientot:!c.pret});
+    });
+  });
+
   var visibles=items.filter(function(e){return !e.brouillon||voirBrouillons});
+  var actif=function(e){return !e.bientot||voirBrouillons};   // les cartes grisées ne comptent pas
 
   // ===== 2. FILTRES =====
   // sel : filtre choisi pour chaque champ ("" = tous). Un exercice est affiché s'il porte le niveau ET le thème choisis.
@@ -173,7 +195,7 @@ a:focus-visible,button:focus-visible{outline:3px solid #4a7bdc;outline-offset:2p
   function majBoutons(c){
     [].forEach.call($(c.zone).children,function(b){
       var v=b.getAttribute("data-v");
-      var nb=visibles.filter(function(e){return correspond(e,c.champ)&&(!v||e[c.champ].indexOf(v)>=0)}).length;
+      var nb=visibles.filter(function(e){return actif(e)&&correspond(e,c.champ)&&(!v||e[c.champ].indexOf(v)>=0)}).length;
       b.setAttribute("aria-pressed",String((sel[c.champ]||"")===v));
       b.lastChild.textContent="("+nb+")";
       b.className="chip"+(nb===0?" zero":"");
@@ -188,12 +210,14 @@ a:focus-visible,button:focus-visible{outline:3px solid #4a7bdc;outline-offset:2p
   }
   function carte(e){
     var li=document.createElement("li");
-    var a=document.createElement("a");a.className="carte";a.href=e.url;
-    var h=document.createElement("h2");h.textContent=e.titre;a.appendChild(h);
+    var gris=e.bientot&&!voirBrouillons;           // chapitre pas encore prêt : carte grisée, pas de lien
+    var a=document.createElement(gris?"div":"a");a.className="carte"+(e.bientot?" bientot":"");if(!gris)a.href=e.url;
+    var h=document.createElement("h2");h.textContent=e.flash&&sel.niveaux==="6eme"?e.court:e.titre;a.appendChild(h);
     // La carte n’affiche que le titre (la description, le format, les niveaux et les thèmes servent aux filtres et restent dans exercices.js).
     var tags=document.createElement("div");tags.className="tags";
     if(e.brouillon){var s=document.createElement("span");s.className="tag brouillon";s.textContent="Brouillon";tags.appendChild(s)}
-    if(e.brouillon)a.appendChild(tags);
+    if(e.bientot){var s2=document.createElement("span");s2.className="tag";s2.textContent="En préparation";tags.appendChild(s2)}
+    if(e.brouillon||e.bientot)a.appendChild(tags);
     li.appendChild(a);return li;
   }
 
@@ -207,10 +231,23 @@ a:focus-visible,button:focus-visible{outline:3px solid #4a7bdc;outline-offset:2p
   }
   function maj(){
     CHAMPS.forEach(majBoutons);
-    var res=visibles.filter(function(e){return correspond(e)});
+    // Niveau 6eme : présentation par domaine (Nombres et calculs, Espace et géométrie…), avec tous les
+    // chapitres des questions flash, prêts ou grisés. Le filtre « Thème » est alors caché.
+    var vue6=sel.niveaux==="6eme"&&Array.isArray(window.CHAPITRES_6E);
+    $("lthe").parentNode.className=vue6?"fgrp hide":"fgrp";
+    var res=visibles.filter(function(e){return vue6?correspond(e,"themes")&&!e.flash:correspond(e)&&actif(e)});
     var ul=$("liste");ul.innerHTML="";
     res.forEach(function(e){ul.appendChild(carte(e))});
-    var n=res.length,tot=visibles.length;
+    var gr=$("groupes");gr.innerHTML="";
+    var n=res.filter(actif).length,tot=visibles.filter(actif).length;
+    if(vue6)window.CHAPITRES_6E.forEach(function(d){
+      var chap=visibles.filter(function(e){return e.flash&&e.domaine===d.domaine});
+      if(!chap.length)return;
+      var h=document.createElement("h2");h.textContent=d.domaine;gr.appendChild(h);
+      var l=document.createElement("ul");l.className="liste";
+      chap.forEach(function(e){l.appendChild(carte(e));if(actif(e))n++});
+      gr.appendChild(l);
+    });
     $("compte").textContent=tot?(n+" exercice"+(n>1?"s":"")+(n<tot?" sur "+tot:"")):"";
     var vide=$("vide");
     if(n===0){

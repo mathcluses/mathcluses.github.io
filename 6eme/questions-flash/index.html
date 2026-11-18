@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>6e · Questions flash</title>
+<!--
+  QUESTIONS FLASH 6e : PAGE D'ACCUEIL
+  Cette page ne contient aucun chapitre : elle lit la liste dans « chapitres.js » (même dossier).
+  Pour ajouter, renommer ou ouvrir un chapitre, modifier uniquement chapitres.js.
+-->
+<link rel="stylesheet" href="commun/flash.css">
+</head>
+<body>
+<main class="large">
+  <p class="retour"><a href="../../index.html">← Tous les exercices</a></p>
+  <h1>Questions flash · 6e</h1>
+  <p class="muted">Choisis un chapitre : des séries de questions courtes, à faire de tête, avec la correction tout de suite.</p>
+  <noscript><p class="card">Cette page a besoin de JavaScript pour afficher la liste des chapitres.</p></noscript>
+  <div id="chapitres"></div>
+</main>
+
+<script src="chapitres.js"></script>
+<script>
+(function(){
+  var zone=document.getElementById("chapitres");
+  var voirBrouillons=new URLSearchParams(location.search).has("brouillons");
+  if(!Array.isArray(window.CHAPITRES_6E)){
+    zone.innerHTML='<p class="card">Le fichier « chapitres.js » est introuvable ou contient une erreur (virgule, guillemet ou crochet oublié ?). La touche F12, onglet « Console », indique la ligne fautive.</p>';
+    return;
+  }
+  CHAPITRES_6E.forEach(function(d){
+    var h=document.createElement("h2");h.textContent=d.domaine;zone.appendChild(h);
+    var ul=document.createElement("ul");ul.className="liste";
+    d.chapitres.forEach(function(c){
+      var li=document.createElement("li");
+      var lien=c.pret||voirBrouillons;
+      var e=document.createElement(lien?"a":"div");
+      e.className="chap"+(c.pret?"":" prepa");
+      if(lien)e.href=c.dossier+"/index.html";
+      var b=document.createElement("b");b.textContent=c.titre;e.appendChild(b);
+      if(!c.pret){var s=document.createElement("span");s.textContent="En préparation";e.appendChild(s)}
+      li.appendChild(e);ul.appendChild(li);
+    });
+    zone.appendChild(ul);
+  });
+})();
+</script>
+</body>
+</html>

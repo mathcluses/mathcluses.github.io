@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>6e · Questions flash : Fractions</title>
+<link rel="stylesheet" href="../commun/flash.css">
+</head>
+<body>
+<!--
+  QUESTIONS FLASH 6e : FRACTIONS
+  D'après le programme de 6e (2025) : rubriques « Automatismes » et « Exemples de réussite » des fractions.
+  Le chapitre est découpé en PARTIES (liste « sections ») ; le moteur ajoute tout seul une partie
+  « Test : tout le chapitre » qui pioche au hasard dans toutes les parties.
+  Nombre de questions : nbQuestions (une partie) et nbTest (le test), 25 au maximum.
+
+  L'élève répond toujours en touchant une proposition parmi 6 à 8 (fabriquées par le moteur).
+  Un générateur donne seulement la bonne réponse, sous l'une de ces formes :
+   • r: 12  ou  r: "0,25"   un nombre
+   • fraction: [13, 8]      une fraction
+   • mixte: [1, 5, 8]       un entier + une fraction : 1 + 5/8
+   • choix: […], r: "…"     propositions écrites à la main
+  et, si possible, pieges: […] = les erreurs typiques à proposer en priorité
+  (nombres, [n, d] pour des fractions, [e, r, d] pour des nombres mixtes).
+  Figures : h.bande(n,k), h.disque(n,k) (plusieurs bandes / gâteaux si k > n), h.droite(b,k,max).
+  Le reste du mode d'emploi : voir ../6qf-multiplication/index.html.
+-->
+<main id="flash"></main>
+<script src="../commun/flash.js"></script>
+<script>
+(function(){
+  var F=FLASH.outils.frac, M=FLASH.outils.mixte, O=FLASH.outils;
+
+  // Les fractions usuelles et leur écriture décimale (automatismes du programme)
+  var USUELLES=[[1,2,.5],[1,4,.25],[3,4,.75],[3,2,1.5],[4,2,2],[5,2,2.5],[1,10,.1],[1,100,.01],[1,1000,.001]];
+  // Question « comparer » : <, = ou >
+  function compare(h,gauche,vg,droite,vd,correction){
+    var r=vg<vd?"&lt;":vg>vd?"&gt;":"=";
+    return { q: "Complète avec &lt;, = ou &gt; : "+h.nw(gauche+" … "+droite), choix: ["&lt;","=","&gt;"], r: r, correction: correction };
+  }
+  // Pour une quantité plus grande que 1 : réponse demandée tantôt en fraction (13/8), tantôt en entier + fraction (1 + 5/8)
+  function plusQue1(h,k,n,piegesFraction){
+    var e=Math.floor(k/n), r=k%n;
+    return h.choix([true,false])
+      ? { fraction: [k,n], pieges: piegesFraction }
+      : { mixte: [e,r,n], pieges: [[e,r,n+1],[r,e,n],[e+1,r,n]] };
+  }
+  function avec(a,b){for(var c in b)a[c]=b[c];return a}
+
+  FLASH.chapitre({
+    titre: "Fractions",
+    image: O.disque(4,3),
+    nbQuestions: 10,
+    nbTest: 20,
+    sections: [
+
+      // ---------------------------------------------------------------- 1
+      // image : illustration du bouton de la partie (les élèves la reconnaissent sans lire)
+      { nom: "Représenter une fraction", image: O.disque(4,3), types: [
+        // Une fois sur deux environ, la fraction dépasse 1 (plusieurs bandes / gâteaux, demi-droite jusqu’à 4).
+        {
+          nom: "Fraction de bandes",
+          gen: function(h){
+            var n=h.rnd(2,8), k;
+            do{k=h.choix([h.rnd(1,n-1),h.rnd(n+1,3*n-1)])}while(k%n===0);
+            var nb=Math.ceil(k/n);
+            return { q: "Une bande entière représente 1 unité. Quelle fraction est coloriée ?"+h.bande(n,k), fraction: [k,n],
+                     pieges: [[k,nb*n],[nb*n-k,n],[n,k],[k%n,n]],
+                     correction: "Chaque bande est partagée en "+n+" parts égales : une part vaut "+F(1,n)+". "+k+" parts sont coloriées : "+F(k,n)+"." };
+          }
+        },
+        {
+          nom: "Fraction de gâteaux",
+          gen: function(h){
+            var n=h.choix([2,3,4,5,6,8]), k;
+            do{k=h.choix([h.rnd(1,n-1),h.rnd(n+1,3*n-1)])}while(k%n===0);
+            var nb=Math.ceil(k/n);
+            return { q: "Un gâteau entier représente 1 unité. Quelle fraction est coloriée ?"+h.disque(n,k), fraction: [k,n],
+                     pieges: [[k,nb*n],[nb*n-k,n],[n,k],[k%n,n]],
+                     correction: "Chaque gâteau est partagé en "+n+" parts égales : une part vaut "+F(1,n)+". "+k+" parts sont coloriées : "+F(k,n)+"." };
+          }
+        },
+        {
+          nom: "Demi-droite graduée",
+          gen: function(h){
+            var b=h.choix([2,3,4,5,6,8,10]), max=h.choix([1,2,3,4]), k;
+            if(b>=8&&max>2)max=2;                    // graduations encore lisibles sur téléphone
+            do{k=h.rnd(1,max*b)}while(k%b===0);
+            return { q: "Quelle est l’abscisse du point A ?"+h.droite(b,k,max), fraction: [k,b], pieges: [[k,max*b],[k+1,b],[k-1,b],[k%b,b]],
+                     correction: "L’unité est partagée en "+b+" : chaque graduation vaut "+F(1,b)+". A est à "+k+" graduations de 0 : "+F(k,b)+"." };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 2
+      { nom: "Composer et décomposer des fractions", image: O.disque(4,7), types: [
+        {
+          nom: "Plusieurs gâteaux",
+          gen: function(h){
+            var n=h.choix([2,3,4,6,8]), e=h.rnd(1,2), r=h.rnd(1,n-1), k=e*n+r;
+            return avec({ q: "Chaque gâteau est partagé en "+n+" parts égales. Combien de gâteaux sont coloriés ?"+h.disque(n,k),
+                     correction: k+" parts de "+F(1,n)+" : "+F(k,n)+" = "+M(e,r,n)+"." },
+                     plusQue1(h,k,n,[[k,(e+1)*n],[r,n],[k,n*e]]));
+          }
+        },
+        {
+          nom: "Plusieurs bandes",
+          gen: function(h){
+            var n=h.rnd(3,8), e=1, r=h.rnd(1,n-1), k=e*n+r;
+            return avec({ q: "Chaque bande est partagée en "+n+" parts égales. Combien de bandes sont coloriées ?"+h.bande(n,k),
+                     correction: k+" parts de "+F(1,n)+" : "+F(k,n)+" = "+M(e,r,n)+"." },
+                     plusQue1(h,k,n,[[k,2*n],[r,n],[n,k]]));
+          }
+        },
+        {
+          nom: "Demi-droite graduée (au-delà de 1)",
+          gen: function(h){
+            var b=h.choix([2,3,4,5,6,8]), max=h.choix([2,3]), k;
+            do{k=h.rnd(b+1,max*b)}while(k%b===0);
+            return avec({ q: "Quelle est l’abscisse du point A ?"+h.droite(b,k,max),
+                     correction: "Chaque graduation vaut "+F(1,b)+". A est à "+k+" graduations de 0 : "+F(k,b)+" = "+M(Math.floor(k/b),k%b,b)+"." },
+                     plusQue1(h,k,b,[[k,max*b],[k+1,b],[k-1,b]]));
+          }
+        },
+        {
+          nom: "Fraction → entier + fraction",
+          gen: function(h){
+            var n=h.rnd(2,9), e=h.rnd(1,4), r=h.rnd(1,n-1), k=e*n+r;
+            return { q: F(k,n)+" = ?", mixte: [e,r,n], pieges: [[r,e,n],[e+1,r,n],[e,n-r,n]],
+                     correction: F(k,n)+" = "+F(e*n,n)+" + "+F(r,n)+" = "+M(e,r,n)+"." };
+          }
+        },
+        {
+          nom: "Entier + fraction → fraction",
+          gen: function(h){
+            var n=h.rnd(2,9), e=h.rnd(1,4), r=h.rnd(1,n-1), k=e*n+r;
+            return { q: M(e,r,n)+" = ?", fraction: [k,n], pieges: [[e+r,n],[e*r,n],[r,n+e]],
+                     correction: e+" = "+F(e*n,n)+", donc "+M(e,r,n)+" = "+F(e*n+" + "+r,n)+" = "+F(k,n)+"." };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 3
+      { nom: "Fractions et nombres décimaux", image: F(1,4)+" = 0,25", types: [
+        {
+          nom: "Écriture décimale des fractions usuelles",
+          gen: function(h){
+            var u=h.choix(USUELLES);
+            return { q: F(u[0],u[1])+" = ?", r: u[2], pieges: [Number(u[0]+"."+u[1]), u[1]/u[0]],
+                     correction: "À connaître par cœur : "+F(u[0],u[1])+" = "+h.nb(u[2])+"." };
+          }
+        },
+        {
+          nom: "Écrire un décimal sous forme de fraction",
+          gen: function(h){
+            var u=h.choix(USUELLES);
+            return { q: h.nb(u[2])+" = "+F("…",u[1]), r: u[0],
+                     correction: h.nb(u[2])+" = "+F(u[0],u[1])+"." };
+          }
+        },
+        {
+          nom: "Fractions décimales → écriture à virgule",
+          gen: function(h){
+            var d=h.choix([10,100,1000]), n;
+            do{n=h.rnd(1,d*10-1)}while(n%10===0);
+            return { q: F(n,d)+" = ?", r: n/d, pieges: [n/(d*10), n*10/d],
+                     correction: F(n,d)+" = "+h.nb(n/d)+" : "+n+" "+{10:"dixièmes",100:"centièmes",1000:"millièmes"}[d]+"." };
+          }
+        },
+        {
+          nom: "Somme de fractions décimales → écriture à virgule",
+          gen: function(h){
+            var e=h.rnd(0,20), a=h.rnd(1,9), b=h.choix([0,h.rnd(1,9)]), c=h.rnd(1,9);
+            var termes=[e?String(e):null, F(a,10), b?F(b,100):null, F(c,1000)].filter(Boolean);
+            var v=e+a/10+b/100+c/1000;
+            return { q: termes.join(" + ")+" = ?", r: v, pieges: [e+a/10+c/100, e+a/100+b/10+c/1000],
+                     correction: "Les dixièmes au 1<sup>er</sup> rang après la virgule, les centièmes au 2<sup>e</sup>, les millièmes au 3<sup>e</sup> : "+h.nb(v)+"." };
+          }
+        },
+        // Décompositions « entier + fraction décimale », la fraction pouvant dépasser 1 : 81 + 53/100, 81 + 53/10, 73 + 720/100
+        {
+          nom: "Entier + fraction décimale → écriture à virgule",
+          gen: function(h){
+            var e=h.rnd(1,99), d=h.choix([10,100,100,1000]), plus1=d<1000&&h.choix([true,false]), num;
+            do{num=plus1?h.rnd(d+1,10*d-1):h.rnd(1,d-1)}while(num%d===0);
+            var v=e+num/d;
+            return { q: e+" + "+F(num,d)+" = ?", r: v,
+                     pieges: [Number(e+"."+num), e+num/(d*10), e+num*10/d],
+                     correction: F(num,d)+" = "+h.nb(num/d)+", donc "+e+" + "+F(num,d)+" = "+e+" + "+h.nb(num/d)+" = "+h.nb(v)+"." };
+          }
+        },
+        {
+          nom: "Compléter une décomposition décimale",
+          gen: function(h){
+            var e=h.rnd(1,99), d=h.choix([10,100]), plus1=h.choix([true,false]), num;
+            do{num=plus1?h.rnd(d+1,5*d):h.rnd(1,d-1)}while(num%d===0);
+            var v=e+num/d;                            // si plus1, l’entier donné est plus petit que la partie entière : la fraction dépasse 1
+            return { q: h.nb(v)+" = "+e+" + "+F("…",d), r: num,
+                     pieges: [num%d, num*10, num%10===0?num/10:num+d],
+                     correction: h.nb(v)+" − "+e+" = "+h.nb(num/d)+" = "+F(num,d)+"." };
+          }
+        },
+        {
+          nom: "Fraction égale à un nombre entier",
+          gen: function(h){
+            var b=h.rnd(2,9), q=h.rnd(1,10);
+            return { q: F(b*q,b)+" = ?", r: q, pieges: [b*q-b],
+                     correction: F(b*q,b)+" = "+(b*q)+" ÷ "+b+" = "+q+"." };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 4
+      { nom: "Le quotient : égalités à trous", image: "3 × … = 2", types: [
+        {
+          nom: "b × … = a",
+          gen: function(h){
+            var b=h.rnd(2,9), a;
+            do{a=h.rnd(1,20)}while(a%b===0);        // seule l’écriture fractionnaire convient
+            return { q: b+" × … = "+a, fraction: [a,b], pieges: [[b,a],[a,b*a],[a-b>0?a-b:a+b,b]],
+                     correction: "Le quotient de "+a+" par "+b+" est le nombre qui, multiplié par "+b+", donne "+a+" : c’est "+F(a,b)+"." };
+          }
+        },
+        {
+          nom: "… × b = a",
+          gen: function(h){
+            var b=h.rnd(2,9), a;
+            do{a=h.rnd(1,20)}while(a%b===0);
+            return { q: "… × "+b+" = "+a, fraction: [a,b], pieges: [[b,a],[a,b*a],[a-b>0?a-b:a+b,b]],
+                     correction: "… × "+b+" = "+b+" × …, et "+b+" × "+F(a,b)+" = "+a+"." };
+          }
+        },
+        {
+          nom: "b × a/b = ?",
+          gen: function(h){
+            var b=h.rnd(2,9), a=h.rnd(1,20), q=h.choix([b+" × "+F(a,b), F(a,b)+" × "+b]);
+            return { q: q+" = ?", r: a, pieges: [a*b, b],
+                     correction: F(a,b)+" est le nombre qui, multiplié par "+b+", donne "+a+"." };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 5
+      { nom: "Fraction d’une quantité", image: F(2,3)+" de 12", types: [
+        {
+          nom: "Fraction d’une quantité",
+          gen: function(h){
+            var d=h.rnd(2,10), n=h.rnd(1,d-1), part=h.rnd(2,12), total=d*part;
+            var u=h.choix(["œufs","billes","€","m","élèves","cm"]);
+            return { q: F(n,d)+" de "+total+" "+u+" = … "+u, r: n*part, pieges: [part, total-n*part, total*n],
+                     correction: F(1,d)+" de "+total+" = "+total+" ÷ "+d+" = "+part+", donc "+F(n,d)+" de "+total+" = "+n+" × "+part+" = "+(n*part)+"." };
+          }
+        },
+        {
+          nom: "Fraction d’un nombre (résultat en fraction)",
+          gen: function(h){
+            var d=h.rnd(2,9), n=h.rnd(2,9), a;
+            do{a=h.rnd(2,9)}while(a%d===0);
+            return { q: F(n,d)+" de "+a+" = ?", fraction: [n*a,d], pieges: [[n+a,d],[n,d*a],[n*a,d*a]],
+                     correction: F(n,d)+" de "+a+" = "+n+" × "+F(a,d)+" = "+F(n*a,d)+"." };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 6
+      { nom: "Égalités de fractions", image: F(1,2)+" = "+F(2,4), types: [
+        {
+          nom: "Compléter le numérateur",
+          gen: function(h){
+            var b=h.rnd(2,9), a=h.rnd(1,9), k=h.rnd(2,9);
+            return { q: F(a,b)+" = "+F("…",k*b), r: k*a, pieges: [a+k*b-b, k*b],
+                     correction: b+" × "+k+" = "+(k*b)+", donc "+a+" × "+k+" = "+(k*a)+"." };
+          }
+        },
+        {
+          nom: "Compléter le dénominateur",
+          gen: function(h){
+            var b=h.rnd(2,9), a=h.rnd(1,9), k=h.rnd(2,9);
+            return { q: F(a,b)+" = "+F(k*a,"…"), r: k*b, pieges: [b+k*a-a, k*a],
+                     correction: a+" × "+k+" = "+(k*a)+", donc "+b+" × "+k+" = "+(k*b)+"." };
+          }
+        },
+        {
+          nom: "Simplifier",
+          gen: function(h){
+            var a,b;
+            do{b=h.rnd(2,9);a=h.rnd(1,9)}while(h.pgcd(a,b)!==1);
+            var k=h.rnd(2,9);
+            return { q: F(k*a,k*b)+" = "+F("…",b), r: a, pieges: [k*a-(k*b-b), k*a],
+                     correction: "On divise le numérateur et le dénominateur par "+k+" : "+F(k*a,k*b)+" = "+F(a,b)+"." };
+          }
+        },
+        {
+          nom: "Trouver la fraction égale",
+          gen: function(h){
+            var a,b;
+            do{b=h.rnd(2,9);a=h.rnd(1,9)}while(h.pgcd(a,b)!==1||a===b);
+            var k=h.rnd(2,6);
+            return { q: "Quelle fraction est égale à "+F(a,b)+" ?", fraction: [k*a,k*b],
+                     pieges: [[b,a],[a+k,b+k],[k*a,b],[a,k*b],[k*a+1,k*b]],
+                     correction: F(k*a,k*b)+" : on a multiplié le numérateur et le dénominateur par "+k+"." };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 7
+      { nom: "Comparer et encadrer", image: F(3,5)+" &lt; "+F(4,5), types: [
+        {
+          nom: "Comparer une fraction à 1",
+          gen: function(h){
+            var d=h.rnd(2,12), n=h.choix([h.rnd(1,d-1),d,h.rnd(d+1,2*d)]);
+            return compare(h,F(n,d),n/d,"1",1,
+              n<d?"Le numérateur est plus petit que le dénominateur : la fraction est plus petite que 1.":
+              n>d?"Le numérateur est plus grand que le dénominateur : la fraction est plus grande que 1.":
+              "Le numérateur est égal au dénominateur : la fraction est égale à 1.");
+          }
+        },
+        {
+          nom: "Même dénominateur",
+          gen: function(h){
+            var d=h.rnd(3,15), a=h.rnd(1,2*d), b;
+            do{b=h.rnd(1,2*d)}while(b===a);
+            return compare(h,F(a,d),a/d,F(b,d),b/d,"Même dénominateur : on compare les numérateurs.");
+          }
+        },
+        {
+          nom: "Même numérateur",
+          gen: function(h){
+            var n=h.rnd(1,9), a=h.rnd(2,12), b;
+            do{b=h.rnd(2,12)}while(b===a);
+            return compare(h,F(n,a),n/a,F(n,b),n/b,"Même numérateur : plus le dénominateur est grand, plus les parts sont petites.");
+          }
+        },
+        {
+          nom: "Encadrer entre deux entiers",
+          gen: function(h){
+            var d=h.rnd(2,9), e=h.rnd(0,6), r=h.rnd(1,d-1), n=e*d+r;
+            var choix=[0,1,2,3,4,5,6,7].map(function(x){return "entre "+x+" et "+(x+1)});
+            return { q: F(n,d)+" est compris…", choix: choix, r: "entre "+e+" et "+(e+1),
+                     correction: F(n,d)+" = "+e+" + "+F(r,d)+", donc "+F(n,d)+" est entre "+e+" et "+(e+1)+"." };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 8
+      { nom: "Calculer avec des fractions", image: F(1,4)+" + "+F(2,4), types: [
+        {
+          nom: "Relations entre ¼, ½, ¾ et 1",
+          gen: function(h){
+            var c=h.choix([[[1,2],"+",[1,2],1],[[1,4],"+",[1,4],.5],[1,"−",[1,4],.75],[[1,2],"+",[1,4],.75],
+                           [1,"−",[1,2],.5],[[3,4],"+",[1,4],1],[[1,2],"−",[1,4],.25],[[3,4],"−",[1,4],.5]]);
+            var e=function(x){return typeof x==="number"?String(x):F(x[0],x[1])};
+            var valeurs=[[0,"0"],[.25,F(1,4)],[.5,F(1,2)],[.75,F(3,4)],[1,"1"],[1.25,F(5,4)],[1.5,F(3,2)],[2,"2"]];
+            var res=valeurs.filter(function(v){return v[0]===c[3]})[0][1];
+            return { q: e(c[0])+" "+c[1]+" "+e(c[2])+" = ?", choix: valeurs.map(function(v){return v[1]}), r: res };
+          }
+        },
+        {
+          nom: "Additionner, soustraire (même dénominateur)",
+          gen: function(h){
+            var d=h.rnd(2,12), a=h.rnd(1,2*d), b, plus=h.choix([true,false]);
+            do{b=h.rnd(1,2*d)}while(b===a);
+            if(!plus&&b>a){var t=a;a=b;b=t}
+            var n=plus?a+b:a-b;
+            return { q: F(a,d)+(plus?" + ":" − ")+F(b,d)+" = ?", fraction: [n,d],
+                     pieges: plus?[[a+b,2*d],[a*b,d]]:[[a+b,d],[n,2*d]],
+                     correction: "Même dénominateur : "+(plus?"on ajoute":"on soustrait")+" les numérateurs, "+a+(plus?" + ":" − ")+b+" = "+n+"." };
+          }
+        },
+        {
+          nom: "Additionner, soustraire (dénominateurs multiples)",
+          gen: function(h){
+            var b=h.rnd(2,5), k=h.rnd(2,4), a=h.rnd(1,2*b), c=h.rnd(1,2*k*b), plus=h.choix([true,false]);
+            var A=a*k, n=plus?A+c:A-c;
+            if(n<=0){plus=true;n=A+c}
+            var faux=plus?a+c:Math.abs(a-c)||a+c;
+            return { q: F(a,b)+(plus?" + ":" − ")+F(c,k*b)+" = ?", fraction: [n,k*b],
+                     pieges: [[faux,b+k*b],[faux,k*b]],
+                     correction: F(a,b)+" = "+F(A,k*b)+", donc "+F(A,k*b)+(plus?" + ":" − ")+F(c,k*b)+" = "+F(n,k*b)+"." };
+          }
+        },
+        {
+          nom: "Multiplier une fraction par un entier",
+          gen: function(h){
+            var d=h.rnd(2,9), a=h.rnd(1,9), n=h.rnd(2,9);
+            var q=h.choix([n+" × "+F(a,d), F(a,d)+" × "+n]);
+            return { q: q+" = ?", fraction: [n*a,d], pieges: [[n*a,n*d],[n+a,d],[a,n*d]],
+                     correction: n+" × "+F(a,d)+" = "+F(n+" × "+a,d)+" = "+F(n*a,d)+"." };
+          }
+        }
+      ]}
+
+    ]
+  });
+})();
+</script>
+</body>
+</html>

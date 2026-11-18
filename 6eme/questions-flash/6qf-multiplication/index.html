@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>6e · Questions flash : Multiplication</title>
+<link rel="stylesheet" href="../commun/flash.css">
+</head>
+<body>
+<!--
+  QUESTIONS FLASH 6e : MULTIPLICATION (chapitre modèle, à copier pour les autres chapitres)
+  Le fonctionnement (déroulement, propositions, couleurs) est dans ../commun/flash.js : rien à y toucher.
+  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
+  L'élève répond toujours en touchant une proposition parmi 6 à 8, fabriquées par le moteur autour de la bonne réponse.
+
+  UN TYPE DE QUESTIONS = { nom: "…", gen: function(h){ … return { … }; } }
+   • nom : nom du type de questions (pour s'y retrouver dans ce fichier)
+   • gen : fabrique UNE question au hasard à chaque appel, et renvoie :
+       q          l'énoncé (on peut y mettre du HTML)
+       r          la bonne réponse, un nombre (3.5)
+       pieges     (facultatif) erreurs typiques à proposer en priorité, par exemple [34.5, 0.345]
+       fraction   (à la place de r) une fraction [3, 4] ; mixte : un entier + une fraction [1, 5, 8]
+       choix      (facultatif) propositions écrites à la main ; r doit alors être l'une d'elles
+       correction (facultatif) explication affichée après une erreur
+   • Sous forme de parties : voir ../6qf-fractions/index.html (sections).
+   • h donne des outils :
+       h.rnd(2,9)        entier au hasard de 2 à 9
+       h.choix([…])      un élément au hasard
+       h.melange([…])    la liste mélangée
+       h.nb(1234.5)      écriture française « 1 234,5 »
+       h.frac(3,4)       fraction avec un trait horizontal
+       h.nw("…")         morceau d'énoncé qui ne se coupe pas en fin de ligne
+-->
+<main id="flash"></main>
+<script src="../commun/flash.js"></script>
+<script>
+FLASH.chapitre({
+  titre: "Multiplication",
+  types: [
+
+    {
+      nom: "Tables de multiplication",
+      gen: function(h){
+        var a=h.rnd(2,9), b=h.rnd(2,9);
+        return { q: a+" × "+b+" = ?", r: a*b };
+      }
+    },
+
+    {
+      nom: "Multiplier par 10, 100, 1 000",
+      gen: function(h){
+        var k=h.rnd(1,3), n=h.rnd(11,9999);
+        if(n%10===0)n++;                            // pas de zéro inutile à la fin
+        var x=n/Math.pow(10,k), m=h.choix([10,100,1000]);
+        var rangs={10:"1 rang",100:"2 rangs",1000:"3 rangs"}[m];
+        return {
+          q: h.nb(x)+" × "+h.nb(m)+" = ?",
+          r: n*m/Math.pow(10,k),
+          correction: "Multiplier par "+h.nb(m)+" : chaque chiffre prend une valeur "+h.nb(m)+" fois plus grande, il avance de "+rangs+"."
+        };
+      }
+    },
+
+    {
+      nom: "Multiplier par 0,1 ; 0,01 ; 0,001",
+      gen: function(h){
+        var n=h.rnd(2,999), m=h.choix([0.1,0.01,0.001]);
+        var div={0.1:10,0.01:100,0.001:1000}[m];
+        return {
+          q: h.nb(n)+" × "+h.nb(m)+" = ?",
+          r: n/div,
+          correction: "Multiplier par "+h.nb(m)+", c’est diviser par "+h.nb(div)+"."
+        };
+      }
+    },
+
+    {
+      nom: "Calcul astucieux",
+      gen: function(h){
+        var a=h.rnd(11,99), paire=h.choix([[2,5],[4,25],[2,50],[5,20]]);
+        var ordre=h.melange([a,paire[0],paire[1]]);
+        return {
+          q: ordre.join(" × ")+" = ?",
+          r: a*paire[0]*paire[1],
+          correction: "On regroupe "+paire[0]+" × "+paire[1]+" = "+h.nb(paire[0]*paire[1])+", puis "+a+" × "+h.nb(paire[0]*paire[1])+" = "+h.nb(a*paire[0]*paire[1])+"."
+        };
+      }
+    },
+
+    {
+      nom: "Décimal × entier",
+      gen: function(h){
+        var a=h.rnd(2,9), b=h.rnd(2,9), k=h.choix([1,1,2]);
+        var p=Math.pow(10,k);
+        return {
+          q: h.nb(a/p)+" × "+b+" = ?",
+          r: a*b/p,
+          correction: a+" × "+b+" = "+(a*b)+", donc "+h.nb(a/p)+" × "+b+" = "+h.nb(a*b/p)+"."
+        };
+      }
+    },
+
+    {
+      nom: "Ordre de grandeur (QCM)",
+      gen: function(h){
+        var A=h.rnd(2,9)*10, B=h.rnd(2,9)*10;
+        var a=A+h.choix([-1,1])*h.rnd(1,15)/10, b=B+h.choix([-1,1]);
+        var o=A*B;
+        return {
+          q: "Le résultat de "+h.nw(h.nb(a)+" × "+b)+" est proche de…",
+          choix: [o/100,o/10,o/2,o,2*o,o*10].map(h.nb),
+          r: h.nb(o),
+          correction: h.nb(a)+" ≈ "+A+" et "+b+" ≈ "+B+", donc "+h.nw(h.nb(a)+" × "+b)+" ≈ "+A+" × "+B+" = "+h.nb(o)+"."
+        };
+      }
+    }
+
+  ]
+});
+</script>
+</body>
+</html>
