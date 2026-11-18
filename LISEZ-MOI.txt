@@ -4,7 +4,10 @@ SITE D'EXERCICES DE MATHÉMATIQUES : MODE D'EMPLOI
 CONTENU DU DOSSIER
   index.html        Page d'accueil : le catalogue (ne pas modifier pour ajouter un exercice).
   exercices.js      La liste des exercices et les réglages. C'est le fichier à modifier.
-  exercices/        Un sous-dossier par exerciseur, avec son fichier index.html.
+  6eme/ 5eme/ 4eme/ 3eme/
+                    Un dossier par classe. Dans chacun : « exerciseurs », « questions-flash » et
+                    « lecons ». Chaque exerciseur a son propre dossier dans « exerciseurs »,
+                    avec son fichier index.html.
   LISEZ-MOI.txt     Ce fichier.
 
 POUR TESTER SUR VOTRE ORDINATEUR
@@ -12,15 +15,16 @@ POUR TESTER SUR VOTRE ORDINATEUR
   Après une modification, rechargez la page avec F5.
 
 AJOUTER UN NOUVEL EXERCICE EN 3 ÉTAPES
-  1. Créez un sous-dossier dans « exercices », avec un nom court, sans espace ni accent
-     (par exemple « fractions-addition »), et placez-y le fichier de l'exerciseur sous le nom
-     index.html.
+  1. Créez un sous-dossier dans « <classe>/exerciseurs » (par exemple 4eme/exerciseurs), nommé
+     <chiffre de la classe>exo-<sujet>, sans espace ni accent (par exemple
+     « 4exo-fractions-addition »), et placez-y le fichier de l'exerciseur sous le nom index.html.
   2. Dans exercices.js, copiez le modèle donné en commentaire et remplissez-le :
      titre, description, niveaux, thèmes, format, url.
-     L'url est le chemin du fichier, par exemple : "exercices/fractions-addition/index.html".
+     L'url est le chemin du fichier, par exemple :
+     "4eme/exerciseurs/4exo-fractions-addition/index.html".
   3. Rechargez index.html : l'exercice apparaît dans le catalogue, avec ses filtres.
   Pour permettre le retour au catalogue, l'exerciseur peut contenir le lien :
-     <a href="../../index.html">← Tous les exercices</a>
+     <a href="../../../index.html">← Tous les exercices</a>   (trois niveaux de dossiers à remonter)
 
 CRÉER UN NIVEAU OU UN THÈME
   Ajoutez son nom dans SITE.niveaux ou SITE.themes (dans exercices.js), à la place voulue,
@@ -35,7 +39,7 @@ MASQUER UN EXERCICE EN COURS DE PRÉPARATION
 
 PARTAGER UN CATALOGUE DÉJÀ FILTRÉ
   Choisissez un niveau et un thème : l'adresse de la page change, par exemple
-  .../index.html?niveau=4e&theme=Fractions . Copiez-la pour donner ce lien à vos élèves.
+  .../index.html?niveau=4eme&theme=Fractions . Copiez-la pour donner ce lien à vos élèves.
 
 EN CAS DE PROBLÈME
   • Un cadre rouge en haut de la page indique ce qui ne va pas dans exercices.js
@@ -52,4 +56,10 @@ METTRE EN LIGNE (GitHub Pages)
   votre navigateur, utilisez GitHub Desktop). Le fichier index.html à la racine du dépôt
   remplace alors l'ancien : le lien déjà donné aux élèves affichera le catalogue au lieu
   de l'exerciseur. Le nouveau lien direct de l'exerciseur est :
-     .../exercices/calcul-relatifs-fractions-puissances/index.html
+     .../3eme/exerciseurs/3exo-relatifs-fractions-puissances/index.html
+     .../5eme/exerciseurs/5exo-relatifs-additions-soustractions/index.html
+
+DOSSIERS VIDES : GitHub ne garde pas un dossier qui ne contient aucun fichier. Les dossiers
+« questions-flash » et « lecons » n'existeront donc en ligne que lorsque vous y placerez un
+premier fichier (créez-le avec « Add file » > « Create new file », en tapant le chemin complet
+dans le nom du fichier, par exemple 5eme/lecons/5lecon-relatifs/index.html).

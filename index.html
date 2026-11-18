@@ -190,14 +190,11 @@ a:focus-visible,button:focus-visible{outline:3px solid #4a7bdc;outline-offset:2p
     var li=document.createElement("li");
     var a=document.createElement("a");a.className="carte";a.href=e.url;
     var h=document.createElement("h2");h.textContent=e.titre;a.appendChild(h);
-    if(txt(e.description)){var p=document.createElement("p");p.textContent=e.description;a.appendChild(p)}
-    if(txt(e.format)){var f=document.createElement("p");f.className="fmt";f.textContent=e.format;a.appendChild(f)}
+    // La carte n’affiche que le titre (la description, le format, les niveaux et les thèmes servent aux filtres et restent dans exercices.js).
     var tags=document.createElement("div");tags.className="tags";
-    function tag(t,cl){var s=document.createElement("span");s.className="tag "+cl;s.textContent=t;tags.appendChild(s)}
-    trier(e.niveaux,NIV).forEach(function(v){tag(v,"niv")});   // étiquettes dans l’ordre déclaré dans exercices.js
-    trier(e.themes,THE).forEach(function(v){tag(v,"the")});
-    if(e.brouillon)tag("Brouillon","brouillon");
-    a.appendChild(tags);li.appendChild(a);return li;
+    if(e.brouillon){var s=document.createElement("span");s.className="tag brouillon";s.textContent="Brouillon";tags.appendChild(s)}
+    if(e.brouillon)a.appendChild(tags);
+    li.appendChild(a);return li;
   }
 
   // ===== 4. AFFICHAGE =====

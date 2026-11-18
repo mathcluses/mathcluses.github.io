@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>5eme : additions et soustractions de relatifs</title>
+<style>
+
+/* COULEURS : thème clair dans :root, thème sombre dans les deux blocs suivants (modifier les trois pour garder la cohérence). */
+:root{
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#eef3fb;--grid:#cfdcf0;--paper:#fdfdff;--ink:#1b2a6b;--muted:#56628f;--line:#b9c6e6;
+  --ok:#17673f;--ok-bg:#e1f3e8;--ko:#a3262a;--ko-bg:#fbe6e6;--btn:#1b2a6b;--btn-text:#fff;color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12151f;--grid:#1d2335;--paper:#181c29;--ink:#d6defc;--muted:#98a3cc;--line:#37405f;
+  --ok:#7fdca8;--ok-bg:#16301f;--ko:#ff9a9d;--ko-bg:#381a1c;--btn:#d6defc;--btn-text:#12151f;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12151f;--grid:#1d2335;--paper:#181c29;--ink:#d6defc;--muted:#98a3cc;--line:#37405f;
+  --ok:#7fdca8;--ok-bg:#16301f;--ko:#ff9a9d;--ko-bg:#381a1c;--btn:#d6defc;--btn-text:#12151f;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100vh;color:var(--ink);background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;line-height:1.5}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1rem 3rem}
+h1{font-size:1.6rem;margin:0 0 1rem}
+.hide{display:none!important}
+details.sel{border:1px solid var(--line);background:var(--paper);border-radius:6px;margin:0 0 1rem;padding:.2rem 1rem .8rem}
+details.sel:not([open]){padding-bottom:.2rem}
+summary{font-weight:700;cursor:pointer;padding:.4rem 0}
+summary:focus-visible{outline:3px solid #4a7bdc;outline-offset:2px}
+.grp{margin-top:.5rem}.grp>b{display:block;color:var(--muted);font-weight:600}
+.opts{display:flex;flex-wrap:wrap;gap:.2rem 1.2rem}
+.opts label{display:flex;align-items:center;gap:.4rem;cursor:pointer}
+.opts input{accent-color:var(--btn);width:1.05rem;height:1.05rem}
+/* Types « à maîtriser » (class="key") : gras et grosse case */
+.opts .key{font-weight:700;font-size:1.08em}.opts .key input{width:1.4rem;height:1.4rem}
+.hint{font-size:.9rem;margin:0 0 .2rem}
+.opts .optl{font-style:italic}
+.card{background:var(--paper);border:1px solid var(--line);border-left:4px solid #d9534f;border-radius:6px;padding:1.2rem 1.2rem 1.4rem}
+.head{display:flex;align-items:center;gap:.8rem 1.2rem;flex-wrap:wrap;margin-bottom:1rem}.head h1{margin:0}
+.pbar{display:block;width:100%;height:.6rem;margin:0 0 .6rem;accent-color:var(--btn)}
+.pmsg{font-size:1.4rem;font-weight:700;margin:.4rem 0 1.2rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.4rem}
+.muted{color:var(--muted);margin:0}
+#q{font-size:clamp(1.6rem,5.5vw,2.3rem);display:flex;flex-wrap:wrap;align-items:center;gap:.35rem .6rem;min-height:5rem;margin:.2rem 0 1rem}
+/* Fraction : numérateur au-dessus, trait, dénominateur en dessous */
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.15;margin:0 .15em}
+.frac>span:first-child{padding:0 .25em .08em;border-bottom:.07em solid currentColor}
+.frac>span:last-child{padding:.08em .25em 0}
+sup{font-size:.62em;line-height:0;position:relative;top:-.15em}
+.row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-bottom:.7rem}
+input[type=text]{font:inherit;font-size:1.3rem;width:10rem;padding:.4rem .6rem;color:var(--ink);background:var(--paper);border:2px solid var(--line);border-radius:6px}
+#rep2{width:4.5rem;font-size:1.1rem;padding:.2rem .4rem}
+input:focus-visible,button:focus-visible{outline:3px solid #4a7bdc;outline-offset:2px}
+button{font:inherit;padding:.55rem 1rem;border-radius:6px;cursor:pointer;border:2px solid var(--btn);background:var(--btn);color:var(--btn-text)}
+button.sec{background:transparent;color:var(--ink)}
+button:disabled{opacity:.4;cursor:not-allowed}
+#fb{margin-top:.6rem;border-radius:6px}
+#fb.ok,#fb.ko{padding:.7rem .9rem}
+#fb.ok{background:var(--ok-bg);color:var(--ok)}#fb.ko{background:var(--ko-bg);color:var(--ko)}
+.verdict{font-weight:700}.ct{margin:.6rem 0 .2rem;font-weight:700}
+#fb.info{padding:.7rem .9rem;background:var(--paper);border:1px solid var(--line)}
+.par{font-size:1.9em;line-height:.8;font-weight:300}
+.cs{margin:.5rem 0}.chtxt{margin:.1rem 0 .3rem}.chlab{margin:.5rem 0 .2rem;font-weight:600}
+.det{margin:.8rem 0 0;border-top:1px solid var(--line);padding-top:.5rem}.det summary{cursor:pointer;font-weight:600}.dl{margin:.4rem 0;padding-left:1.4rem}.dl li{margin:.5rem 0}.dt{display:block}.ds{line-height:2.4;margin:.1rem 0}
+.sf{white-space:nowrap}.chain{line-height:2.6}.seg{white-space:normal}.eq{margin:0 .1rem}
+#fb ol{margin:0;padding-left:1.3rem}#fb li{margin:.3rem 0}#fb .frac{font-size:1.2em}
+.note{margin:1.5rem 0 0;font-size:.9rem;color:var(--muted)}
+.mark{font-size:2.6rem;font-weight:700;margin:.2rem 0 1rem}
+#list{list-style:none;padding:0;margin:0 0 1.2rem}
+#list li{display:flex;flex-wrap:wrap;gap:.4rem 1rem;align-items:center;padding:.5rem .7rem;margin-bottom:.4rem;border-radius:6px;border-left:4px solid}
+#list li.ok{background:var(--ok-bg);border-color:var(--ok)}#list li.ko{background:var(--ko-bg);border-color:var(--ko)}
+#list .rq{font-size:1.25rem;display:inline-flex;flex-wrap:wrap;align-items:center;gap:.3rem .5rem}
+#q span{white-space:nowrap}
+.retour{margin:0 0 .6rem;font-size:.95rem}.retour a{color:var(--muted)}
+</style>
+</head>
+<body>
+<!--
+  NOMBRES RELATIFS (5e) : additions et soustractions. Page autonome (un seul fichier, aucune dépendance).
+  COMMENT MODIFIER
+   • Cases cochées par défaut : attribut « data-def » (et « checked ») des cases ci-dessous.
+     Le bouton « Nouvelle série » remet les cases dans leur état par défaut (celles qui ont data-def).
+     La valeur (value="…") d’un type doit être le nom d’un générateur G.xxx du <script>.
+   • Les deux options (data-opt) ne sont pas des types : « Écriture simplifiée » et « Nombres décimaux » ; cochées, elles s’appliquent aux 10 questions.
+   • Nombre de termes d’un mélange (4 à 7), taille des nombres : fonction build() du <script>.
+   • Textes des corrections : fonction build() du <script>.
+   • Couleurs : variables --ink, --paper, --btn… au début du <style>.
+-->
+<main>
+  <p class="retour"><a href="../../../index.html">← Tous les exercices</a></p>
+  <header class="head"><h1>5eme : additions et soustractions de relatifs</h1></header>
+  <details class="sel" id="sel">
+    <summary>Types d’exercices (série de 10 questions) : <span id="cnt"></span></summary>
+    <div id="opts">
+      <div class="grp"><b>Types de questions</b><div class="opts">
+        <label><input type="checkbox" value="add" data-def checked> Additions</label>
+        <label><input type="checkbox" value="sub" data-def checked> Soustractions</label>
+        <label><input type="checkbox" value="mix" data-def checked> Mélanges (4 à 7 nombres)</label></div></div>
+      <div class="grp"><b>Options</b><div class="opts">
+        <label class="optl"><input type="checkbox" id="simple" data-opt data-def checked> Écriture simplifiée (sans parenthèses)</label>
+        <label class="optl"><input type="checkbox" id="dec" data-opt> Nombres décimaux</label></div></div>
+    </div>
+  </details>
+
+  <section class="card" id="card" aria-labelledby="consigne">
+    <div class="top"><b id="prog"></b><button class="sec" id="restart">Recommencer la série</button></div>
+    <p class="muted" id="consigne"></p>
+    <div id="q"></div>
+    <div class="row">
+      <label for="rep" class="muted" id="replab">Réponse</label>
+      <input type="text" id="rep" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
+    </div>
+    <div class="row">
+      <button id="check">Valider</button>
+      <button id="show" class="sec">Corriger sans valider</button>
+      <button id="next" class="sec" disabled>Question suivante</button>
+    </div>
+    <div id="fb" role="status" aria-live="polite"></div>
+  </section>
+
+  <section class="card hide" id="end" aria-labelledby="mark">
+    <p class="muted">Série terminée</p>
+    <p class="mark" id="mark"></p>
+    <ul id="list"></ul>
+    <button id="again">Nouvelle série</button>
+  </section>
+
+  <p class="note">Écris ton résultat avec le signe − s’il est négatif, et une virgule pour un nombre décimal (par exemple −3,5). Les 10 questions d’une série sont réparties équitablement entre les types cochés. Option « Écriture simplifiée » : toutes les questions sont écrites sans parenthèses (−7 + 4 − 2 au lieu de (−7) + (+4) − (+2)), et, pour les additions, le premier nombre est négatif. Un mélange n’est jamais composé uniquement de nombres positifs additionnés. Option « Nombres décimaux » : tous les nombres ont un seul chiffre après la virgule. Chaque question n’a qu’un essai ; « Corriger sans valider » affiche la correction sans compter la question, et une autre du même type est posée.</p>
+</main>
+
+<script>
+// Tout le code est dans une fonction isolée pour ne pas polluer la page.
+// Plan du script : outils → générateur de questions (build, G) → saisie → déroulement d’une série → boutons.
+(function(){
+  // ===== OUTILS GÉNÉRAUX =====
+  var rnd=function(a,b){return Math.floor(Math.random()*(b-a+1))+a}; // entier au hasard entre a et b (inclus)
+  var abs=Math.abs,$=function(i){return document.getElementById(i)};
+  var sp=function(h){return '<span>'+h+'</span>'}; // morceau d’énoncé qui ne se coupe pas en fin de ligne
+  function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
+  function shuffle(a){for(var i=a.length-1;i>0;i--){var j=rnd(0,i),t=a[i];a[i]=a[j];a[j]=t}return a}
+  // Les nombres sont stockés en entiers : pour les décimaux on compte en dixièmes (d = 10), sinon d = 1.
+  // fm : écrit le nombre k/d (signe − typographique, virgule, un seul chiffre après la virgule, jamais « ,0 »)
+  function fm(k,d){var s=k<0?"−":"",a=abs(k);if(d===1)return s+a;return s+(a%10===0?a/10:Math.floor(a/10)+","+(a%10))}
+  var P=function(k,d){return k<0?"("+fm(k,d)+")":fm(k,d)};                       // parenthèses si négatif : (−3)
+  var Q=function(k,d){return "("+(k<0?"−":"+")+fm(abs(k),d)+")"};                // signe toujours écrit : (+3), (−3)
+  var SG=function(k){return k<0?"−":"+"};
+
+  // ===== GÉNÉRATEUR DE QUESTIONS =====
+  // rule2 : phrase de correction pour la somme de deux nombres x et y (règle des signes)
+  function rule2(x,y,d){
+    var r=x+y,f=function(k){return fm(k,d)};
+    if((x<0)===(y<0))return "Les deux nombres sont "+(x<0?"négatifs":"positifs")+" : on additionne les distances à zéro ("+f(abs(x))+" + "+f(abs(y))+" = "+f(abs(r))+") et on garde le signe "+(x<0?"moins":"plus")+". Donc "+f(x)+" + "+P(y,d)+" = "+f(r)+".";
+    if(r===0)return "Les deux nombres sont opposés : leur somme vaut 0.";
+    return "Les signes sont différents : on soustrait les distances à zéro ("+f(Math.max(abs(x),abs(y)))+" − "+f(Math.min(abs(x),abs(y)))+" = "+f(abs(r))+"), et le résultat prend le signe du nombre le plus éloigné de zéro ("+(r<0?"moins":"plus")+"). Donc "+f(x)+" + "+P(y,d)+" = "+f(r)+".";
+  }
+  // build : fabrique une question. kind : "add" (additions), "sub" (soustractions) ou "mix" (mélanges de 4 à 7 nombres) ;
+  // simple : vrai = énoncé écrit sans parenthèses ; dec : vrai = nombres décimaux (un chiffre après la virgule).
+  // Le calcul est a1 o2 a2 o3 a3 … (o = + ou −, chaque a = nombre relatif) ; e[i] = a[i] ou −a[i] : le calcul devient une somme de termes signés.
+  function build(kind,simple,dec){
+    var d=dec?10:1,n=kind==="mix"?rnd(4,7):2,N=kind==="mix"?12:20,a,o,e,i,ok;
+    do{
+      a=[];o=[""];e=[];
+      for(i=0;i<n;i++){
+        var m;if(d===1)m=rnd(1,N);else do{m=rnd(1,N*10-1)}while(m%10===0);   // décimaux : jamais de chiffre 0 après la virgule
+        a.push(m*((simple&&kind==="add"&&i===0)||Math.random()<0.5?-1:1));   // additions en écriture simplifiée : le premier nombre est toujours négatif (pas de « 3 + 5 »)
+        if(i>0)o.push(kind==="add"?"+":kind==="sub"?"−":(Math.random()<0.5?"+":"−"));
+        e.push(i===0||o[i]==="+"?a[i]:-a[i]);
+      }
+      ok=!(simple&&n===2&&e[0]>0&&e[1]>0);   // écriture simplifiée : jamais « 8 + 9 » (deux nombres positifs)
+      // mélanges : au moins un terme positif et un terme négatif (donc jamais une simple somme de nombres positifs)
+      if(kind==="mix")ok=ok&&o.indexOf("+")>0&&o.indexOf("−")>0&&e.some(function(x){return x>0})&&e.some(function(x){return x<0});
+    }while(!ok);
+    var R=e.reduce(function(s,x){return s+x},0),parts=[],txt=[];
+    // Énoncé : écriture complète (+3) − (−5)… ou simplifiée 3 + 5…
+    for(i=0;i<n;i++){
+      if(simple){
+        var t=i===0?fm(e[0],d):SG(e[i])+" "+fm(abs(e[i]),d);
+        parts.push(sp(t));txt.push(t);
+      }else{
+        var t2=i===0?Q(a[0],d):o[i]+" "+Q(a[i],d);
+        parts.push(sp(t2));txt.push(t2);
+      }
+    }
+    var stmt=txt.join(" "),sx=e.map(function(x,j){return j===0?fm(x,d):SG(x)+" "+fm(abs(x),d)}).join(" "),st=[];
+    // Étape 1 : écriture simplifiée
+    if(!simple){
+      var it=[];
+      for(i=0;i<n;i++){
+        if(i===0)it.push(Q(a[0],d)+" s’écrit "+fm(a[0],d));
+        else it.push(o[i]+" "+Q(a[i],d)+" devient "+SG(e[i])+" "+fm(abs(a[i]),d));
+      }
+      st.push("On supprime les parenthèses : "+it.join(" ; ")+". (Soustraire un nombre, c’est ajouter son opposé.) L’expression s’écrit donc : "+sx+".");
+    }else{
+      st.push("Chaque nombre est précédé de son signe : on lit l’expression comme une somme de nombres relatifs : "+sx+" = "+e.map(function(x){return Q(x,d)}).join(" + ")+".");
+    }
+    // Étapes suivantes
+    if(n===2)st.push(rule2(e[0],e[1],d));
+    else{
+      var ps=e.filter(function(x){return x>0}),ns=e.filter(function(x){return x<0}),
+        sp1=ps.reduce(function(s,x){return s+x},0),sn1=ns.reduce(function(s,x){return s+x},0);
+      st.push("On regroupe les nombres de même signe. Les positifs : "+ps.map(function(x){return fm(x,d)}).join(" + ")+" = "+fm(sp1,d)+". Les négatifs : "+ns.map(function(x,j){return j===0?fm(x,d):"− "+fm(abs(x),d)}).join(" ")+" = "+fm(sn1,d)+" (on additionne les distances à zéro et on garde le signe moins).");
+      st.push("Il reste à calculer "+fm(sp1,d)+" + "+P(sn1,d)+". "+rule2(sp1,sn1,d));
+    }
+    st.push("Donc "+stmt+" = "+fm(R,d)+".");
+    return{mode:"num",lab:"Calcule.",lbl:"Réponse",html:parts.join("")+sp("=")+sp("?"),n:R,d:d,steps:st};
+  }
+  var G={};
+  G.add=function(s,dc){return build("add",s,dc)};
+  G.sub=function(s,dc){return build("sub",s,dc)};
+  G.mix=function(s,dc){return build("mix",s,dc)};
+
+  // ===== RÉPONSES : affichage et lecture de la saisie =====
+  function ans(q){return fm(q.n,q.d)}
+  // parse : lit la saisie (virgule ou point, signe −, +) → {n, d} ou null si illisible ; refuse les fractions
+  function parse(s){
+    s=s.trim().replace(/\s+/g,"").replace(/[−–]/g,"-").replace(/,/g,".").replace(/^\+/,"");
+    var m=s.match(/^-?\d+(\.\d+)?$/);
+    if(!m)return null;
+    if(!m[1])return{n:parseInt(s,10),d:1};
+    var k=Math.pow(10,m[1].length-1);
+    return{n:Math.round(parseFloat(s)*k),d:k};
+  }
+
+  // ===== DÉROULEMENT D’UNE SÉRIE =====
+  // cur : question en cours ; solved : question terminée ; results : réponses de la série ; plan : les 10 questions prévues {k, dec, simple}
+  var cur,solved,results=[],plan=[];
+  // types : types cochés (les options ne comptent pas) ; si rien n’est coché : additions
+  function types(){
+    var t=[].slice.call(document.querySelectorAll("#opts input:checked:not([data-opt])")).map(function(e){return e.value});
+    return t.length?t:["add"];
+  }
+  // makePlan : choisit le type des 10 questions (répartition équitable : 3 types → 4, 3 et 3 ; 2 types → 5 et 5 ; 1 type → 10).
+  // Les options s’appliquent à toutes les questions : case cochée = les 10 questions sont décimales / écrites sans parenthèses.
+  function makePlan(){
+    var t=shuffle(types()),p=[],i;
+    for(i=0;i<10;i++)p.push({k:t[i%t.length],dec:$("dec").checked,simple:$("simple").checked});
+    return shuffle(p);
+  }
+  function msg(t,c){var f=$("fb");f.className=c||"ko";f.innerHTML=t}
+  function lock(v){$("rep").disabled=v;$("check").disabled=v;$("show").disabled=v}
+  // nextQ : pose la question suivante. noFocus : vrai quand on change les cases (le curseur ne va pas dans le champ, sinon la page défile).
+  function nextQ(noFocus){
+    var p=plan[results.length];
+    cur=G[p.k](p.simple,p.dec);
+    solved=false;
+    $("prog").textContent="Question "+(results.length+1)+" sur 10";
+    $("consigne").textContent=cur.lab;
+    $("q").innerHTML=cur.html;
+    $("replab").textContent=cur.lbl;
+    $("rep").value="";
+    lock(false);
+    $("next").disabled=true;
+    $("fb").className="";$("fb").innerHTML="";
+    if(!noFocus)$("rep").focus({preventScroll:true});
+  }
+  function stepsHTML(q){return"<ol>"+q.steps.map(function(s){return"<li>"+s+"</li>"}).join("")+"</ol>"}
+  // fin : enregistre une réponse validée et affiche la correction
+  function fin(ok,raw){
+    solved=true;
+    results.push({q:cur,ok:ok,raw:raw});
+    lock(true);
+    $("fb").className=ok?"ok":"ko";
+    $("fb").innerHTML='<div class="verdict">'+(ok?"Exact.":"Réponse attendue : "+ans(cur))+'</div><p class="ct">Correction</p>'+stepsHTML(cur);
+    $("next").textContent=results.length===10?"Voir ma note":"Question suivante";
+    $("next").disabled=false;$("next").focus({preventScroll:true});
+  }
+  // skip : bouton « Corriger sans valider » : correction affichée, question non comptée, une autre du même type sera posée
+  function skip(){
+    if(solved)return;
+    $("sel").open=false;
+    solved=true;lock(true);
+    $("fb").className="info";
+    $("fb").innerHTML='<div class="verdict">Réponse attendue : '+ans(cur)+'</div><p class="ct">Correction</p>'+stepsHTML(cur)+'<p class="muted">Cette question n’est pas comptée : une autre question du même type va être posée.</p>';
+    $("next").textContent="Autre question du même type";
+    $("next").disabled=false;$("next").focus({preventScroll:true});
+  }
+  // check : bouton « Valider » (messages d’aide si la saisie est mal écrite, sans compter d’essai)
+  function check(){
+    if(solved)return;
+    $("sel").open=false;
+    var p=parse($("rep").value),raw=esc($("rep").value);
+    if(!p){msg("Écris un nombre entier ou décimal, par exemple −12 ou −3,5.");return}
+    fin(p.n*cur.d===cur.n*p.d,raw);
+  }
+  // showEnd : écran de note de fin de série
+  function showEnd(){
+    var good=results.filter(function(r){return r.ok}).length;
+    $("card").className="card hide";$("end").className="card";solved=false;
+    $("mark").textContent="Note : "+good+" / 10";
+    $("list").innerHTML=results.map(function(r){
+      return '<li class="'+(r.ok?"ok":"ko")+'"><span class="rq">'+r.q.html+'</span><span><b>'+(r.ok?"Juste.":"Faux.")+'</b> Ta réponse : '+r.raw+(r.ok?"":" — attendu : "+ans(r.q))+'</span></li>';
+    }).join("");
+    $("again").focus({preventScroll:true});
+  }
+  // start : lance une nouvelle série de 10 questions (noFocus : voir nextQ)
+  function start(noFocus){
+    results=[];plan=makePlan();
+    var n=document.querySelectorAll("#opts input:checked:not([data-opt])").length;
+    $("cnt").textContent=n+" coché"+(n>1?"s":"");
+    $("end").className="card hide";$("card").className="card";
+    nextQ(noFocus);
+  }
+
+  // ===== BOUTONS ET ÉVÉNEMENTS =====
+  $("check").addEventListener("click",check);
+  $("show").addEventListener("click",skip);
+  $("next").addEventListener("click",function(){results.length===10?showEnd():nextQ()});
+  $("rep").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();e.stopPropagation();check()}});
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Enter"&&solved&&$("card").className.indexOf("hide")<0){e.preventDefault();$("next").click()}});
+  $("opts").addEventListener("change",function(){start(true)}); // pas de focus : évite que la page « saute » vers le champ de réponse
+  $("restart").addEventListener("click",function(){start()});
+  $("again").addEventListener("click",function(){
+    [].forEach.call(document.querySelectorAll("#opts input"),function(e){e.checked=e.hasAttribute("data-def")});
+    start();
+  });
+  start();
+})();
+</script>
+</body>
+</html>

@@ -21,7 +21,7 @@ var SITE = {
   // Ordre d'affichage des boutons de filtre. Seuls les niveaux et thèmes utilisés par
   // au moins un exercice sont affichés. Pour créer un nouveau niveau ou thème :
   // l'ajouter ici (à la place voulue), puis l'utiliser dans les exercices.
-  niveaux: ["6e", "5e", "4e", "3e"],
+  niveaux: ["6eme", "5eme", "4eme", "3eme"],
   themes: [
     "Nombres relatifs",
     "Fractions",
@@ -37,31 +37,32 @@ var SITE = {
 //
 //  {
 //    titre: "Titre de l’exercice",
-//    description: "Une phrase qui dit ce qu’on y travaille.",   // facultatif
-//    niveaux: ["4e"],                    // un ou plusieurs niveaux (déclarés dans SITE.niveaux)
+//    description: "Une phrase qui dit ce qu’on y travaille.",   // facultatif (non affiché sur les cartes)
+//    niveaux: ["4eme"],                    // un ou plusieurs niveaux (déclarés dans SITE.niveaux)
 //    themes: ["Fractions"],              // un ou plusieurs thèmes (déclarés dans SITE.themes)
-//    format: "Séries de 10 questions",   // facultatif : forme de l’exercice
-//    url: "exercices/nom-du-dossier/index.html",   // chemin du fichier de l’exerciseur
+//    format: "Séries de 10 questions",   // facultatif (non affiché sur les cartes)
+//    url: "4eme/exerciseurs/4exo-nom-du-dossier/index.html",   // chemin du fichier de l’exerciseur
 //    brouillon: true                     // facultatif : masque l’exercice (visible avec ?brouillons dans l’adresse)
 //  },
 //
 var EXERCICES = [
 
   {
-    titre: "Relatifs, fractions, puissances",
+    titre: "3eme Exerciseurs : relatifs, fractions, puissances",
     description: "Séries de 10 questions avec correction détaillée, ou parcours en 20 étapes où chaque type de calcul doit être réussi avant de passer au suivant.",
-    niveaux: ["3e"],
+    niveaux: ["3eme"],
     themes: ["Fractions", "Puissances"],
     format: "Séries de 10 questions · Mode progression",
-    url: "exercices/calcul-relatifs-fractions-puissances/index.html"
+    url: "3eme/exerciseurs/3exo-relatifs-fractions-puissances/index.html"
   },
+
   {
-    titre: "Nombres relatifs : additions et soustractions",
+    titre: "5eme Exerciseurs : additions et soustractions de relatifs",
     description: "Additions, soustractions et mélanges de 4 à 7 nombres relatifs, avec options écriture simplifiée et nombres décimaux.",
-    niveaux: ["5e"],
+    niveaux: ["5eme"],
     themes: ["Nombres relatifs"],
     format: "Séries de 10 questions",
-    url: "exercices/relatifs-additions-5e/index.html"
+    url: "5eme/exerciseurs/5exo-relatifs-additions-soustractions/index.html"
   }
 
 ];
