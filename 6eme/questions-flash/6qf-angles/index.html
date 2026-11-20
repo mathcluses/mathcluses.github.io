@@ -83,7 +83,7 @@
     titre: "Angles",
     image: RP.icone(50),
     nbQuestions: 10,
-    nbTest: 12,
+    nbTest: 20,                                       // le test « tout le chapitre » : une série longue
     // Titre à débloquer : les 6 parties au rapporteur en « Maîtrisé » (moyenne des 3 dernières séries)
     titres: [{
       nom: "Permis rapporteur",
@@ -95,14 +95,17 @@
       bravo: "Tu sais lire et tracer un angle au rapporteur.",
       tampon: "Validé"
     }],
+    // 3 catégories : Lire (3 niveaux), Tracer (3 niveaux), Tests (tout le chapitre, nature d'un angle).
+    // nom = clé de la progression et du Permis : ne pas le changer ; affiche = texte (plus court) du bouton.
     sections: [
-      { nom: "Lire un angle : rapporteur posé",    image: RP.icone(40),        types: typesLire1 },
-      { nom: "Lire un angle : rapporteur à tourner", image: RP.icone(115),     types: [atelier("lire",2)] },
-      { nom: "Lire un angle : rapporteur à placer",  image: RP.icone(70),      types: [atelier("lire",3)] },
-      { nom: "Tracer un angle : rapporteur posé",    image: RP.icone(60,true), types: [atelier("tracer",1)] },
-      { nom: "Tracer un angle : rapporteur à tourner", image: RP.icone(130,true), types: [atelier("tracer",2)] },
-      { nom: "Tracer un angle : rapporteur à placer",  image: RP.icone(35,true),  types: [atelier("tracer",3)] },
-      { nom: "Nature d’un angle", image: RP.figureAngle(120,10), nb: 15, types: typesNature }
+      { groupe: "Lire un angle", nom: "Lire un angle : rapporteur posé", affiche: "Niveau 1 : rapporteur posé", image: RP.icone(40), types: typesLire1 },
+      { groupe: "Lire un angle", nom: "Lire un angle : rapporteur à tourner", affiche: "Niveau 2 : rapporteur à tourner", image: RP.icone(115), types: [atelier("lire",2)] },
+      { groupe: "Lire un angle", nom: "Lire un angle : rapporteur à placer", affiche: "Niveau 3 : rapporteur à placer", image: RP.icone(70), types: [atelier("lire",3)] },
+      { groupe: "Tracer un angle", nom: "Tracer un angle : rapporteur posé", affiche: "Niveau 1 : rapporteur posé", image: RP.icone(60,true), types: [atelier("tracer",1)] },
+      { groupe: "Tracer un angle", nom: "Tracer un angle : rapporteur à tourner", affiche: "Niveau 2 : rapporteur à tourner", image: RP.icone(130,true), types: [atelier("tracer",2)] },
+      { groupe: "Tracer un angle", nom: "Tracer un angle : rapporteur à placer", affiche: "Niveau 3 : rapporteur à placer", image: RP.icone(35,true), types: [atelier("tracer",3)] },
+      { groupe: "Tests", test: true, nom: "Test : tout le chapitre" },
+      { groupe: "Tests", nom: "Nature d’un angle", image: RP.figureAngle(120,10), nb: 15, types: typesNature }
     ]
   });
 })();

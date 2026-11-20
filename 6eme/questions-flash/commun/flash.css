@@ -69,8 +69,15 @@ button:disabled{opacity:.4;cursor:not-allowed}
   border:1px solid var(--line);border-left:7px solid var(--c);border-radius:16px;box-shadow:var(--ombre);transition:transform .15s,box-shadow .15s}
 .partie:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.6),0 0 0 1px var(--c);border-color:var(--line);border-left-color:var(--c)}
 .partie:active{transform:scale(.98)}
-.partie:nth-child(8n+2){--c:#0ea5e9}.partie:nth-child(8n+3){--c:#10b981}.partie:nth-child(8n+4){--c:#f59e0b}
-.partie:nth-child(8n+5){--c:#ef4444}.partie:nth-child(8n+6){--c:#8b5cf6}.partie:nth-child(8n+7){--c:#ec4899}.partie:nth-child(8n+8){--c:#14b8a6}
+.partie:nth-of-type(8n+2){--c:#0ea5e9}.partie:nth-of-type(8n+3){--c:#10b981}.partie:nth-of-type(8n+4){--c:#f59e0b}
+.partie:nth-of-type(8n+5){--c:#ef4444}.partie:nth-of-type(8n+6){--c:#8b5cf6}.partie:nth-of-type(8n+7){--c:#ec4899}.partie:nth-of-type(8n+8){--c:#14b8a6}
+/* titre d'une catégorie de parties (ex. « Lire un angle ») */
+.groupe-parties{margin:1.4rem 0 .1rem;font-size:1.35rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#fff;
+  display:flex;align-items:center;gap:.7rem;text-shadow:0 0 14px rgba(167,139,250,.7)}
+.groupe-parties::before{content:"";flex:none;width:.45rem;height:1.6rem;border-radius:4px;
+  background:linear-gradient(180deg,#a78bfa,#ec4899);box-shadow:0 0 12px rgba(236,72,153,.7)}
+.groupe-parties:first-child{margin-top:.4rem}
+.groupe-parties::after{content:"";flex:1;height:2px;border-radius:2px;background:linear-gradient(90deg,rgba(167,139,250,.8),transparent)}
 .partie .nom{flex:1;line-height:1.25}
 /* La consigne reste lisible même devant la fractale */
 #intro{display:inline-block;padding:.1rem .55rem;border-radius:8px;background:rgba(11,16,32,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}

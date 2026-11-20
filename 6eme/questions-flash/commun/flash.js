@@ -26,7 +26,7 @@
   // un élève pourrait encore voir l'ancienne version. À chaque page, on relit ce fichier-ci SANS cache (petite requête) :
   // si sa VERSION est différente de celle qui tourne, on retélécharge les fichiers de la page et on la recharge, une fois.
   // ► À CHAQUE MISE EN LIGNE : changer VERSION (n'importe quelle valeur nouvelle, par exemple la date et une lettre).
-  var VERSION="2026-11-20c";
+  var VERSION="2026-11-20d";
   (function(){
     var moi=document.currentScript&&document.currentScript.src;
     if(!moi||!window.fetch||location.protocol==="file:")return;
@@ -341,6 +341,9 @@
 
   // def.sections : [{ nom, image, types:[…] }, …]  (ou def.types seul pour un chapitre sans parties)
   //   image : petite illustration HTML de la partie (figure h.disque(…) ou mini-calcul), affichée sur son bouton
+  //   groupe : catégorie (facultatif) : les parties qui se suivent avec le même groupe sont réunies sous ce titre
+  //   affiche : texte du bouton, s'il doit être plus court que nom (nom reste la clé de la progression : ne pas le changer)
+  //   { test:true, nom, groupe } (sans types) : place le test « tout le chapitre » à cet endroit (sinon il est à la fin)
   // def.imageTest : illustration du test (par défaut : celles des premières parties, en réduction)
   // def.image : illustration du chapitre (bandeau, et bouton « Autre partie » de l'écran de fin)
   // def.titres : titres à débloquer (voir TITRES plus bas), par exemple le « Permis rapporteur » du chapitre Angles  // def.nbQuestions : questions par partie (10 par défaut) ; def.nbTest : questions du test (20 par défaut)
@@ -355,9 +358,12 @@
     try{fondFractale()}catch(e){}                  // sans canvas : le fond nuit simple reste
 
     var ok=function(t){return t&&typeof t.gen==="function"};
+    var placeTest=null;
     var sections=(def.sections||[{nom:"Commencer",types:def.types||[]}]).map(function(s){
-      return {nom:s.nom,image:s.image,nb:s.nb,types:(s.types||[]).filter(ok).map(function(t){t.section=s.nom;return t})};
-    }).filter(function(s){return s.types.length});
+      if(s.test){placeTest=s;return s}
+      return {nom:s.nom,affiche:s.affiche,groupe:s.groupe,image:s.image,nb:s.nb,types:(s.types||[]).filter(ok).map(function(t){t.section=s.nom;return t})};
+    }).filter(function(s){return s.test||s.types.length});
+    var iTest=sections.indexOf(placeTest);if(iTest>=0)sections.splice(iTest,1);
 
     if(!sections.length){
       $("intro").textContent="Ce chapitre est en préparation : les questions arrivent bientôt.";
@@ -369,8 +375,11 @@
     // (un type répété dans une partie, pour régler sa fréquence, ne compte qu'une fois au test ;
     //  un type marqué horsTest ne sert qu'à sa partie, par exemple « angle aigu » imposé)
     var tous=[].concat.apply([],sections.map(function(s){return s.types})).filter(function(t,i,l){return l.indexOf(t)===i&&!t.horsTest});
-    if(sections.length>1)sections.push({nom:"Test : tout le chapitre",test:true,types:tous,
-      image:def.imageTest||'<span class="ill-test">'+sections.slice(0,4).map(function(s){return '<span>'+(s.image||"")+'</span>'}).join("")+'</span>'});
+    if(sections.length>1){
+      var test={nom:(placeTest&&placeTest.nom)||"Test : tout le chapitre",groupe:placeTest&&placeTest.groupe,test:true,types:tous,
+        image:def.imageTest||'<span class="ill-test">'+sections.slice(0,4).map(function(s){return '<span>'+(s.image||"")+'</span>'}).join("")+'</span>'};
+      if(iTest>=0)sections.splice(iTest,0,test);else sections.push(test);
+    }
 
     // Bouton d'une partie : illustration (pour reconnaître la partie sans lire) + nom + pastille de niveau.
     // La pastille donne la MOYENNE DES 3 DERNIÈRES SÉRIES faites sur cet appareil, en 4 couleurs (BILAN) :
@@ -403,8 +412,11 @@
       return {n:h.length,moy:moy,rang:i,couleur:BILAN[i][1],nom:BILAN[i][2]};
     }
     sections.forEach(function(s,i){
+      if(s.groupe&&(i===0||sections[i-1].groupe!==s.groupe)){   // titre de catégorie
+        var g=document.createElement("h3");g.className="groupe-parties";g.textContent=s.groupe;$("parties").appendChild(g);
+      }
       var b=document.createElement("button");b.type="button";b.className="partie"+(s.test?" test":"");
-      b.innerHTML=(s.image?'<span class="ill" aria-hidden="true">'+s.image+'</span>':'')+'<span class="nom">'+esc(s.nom)+'</span><span class="etat"></span>';
+      b.innerHTML=(s.image?'<span class="ill" aria-hidden="true">'+s.image+'</span>':'')+'<span class="nom">'+esc(s.affiche||s.nom)+'</span><span class="etat"></span>';
       // toucher le badge de niveau ouvre les dernières séries ; toucher le reste du bouton lance une série
       b.addEventListener("click",function(e){
         if(e.target.closest&&e.target.closest(".etat.fait")){montrerSeries(i);return}
@@ -438,7 +450,7 @@
       document.body.appendChild(c);
     }
     function majEtats(){
-      [].forEach.call($("parties").children,function(b,i){
+      [].forEach.call($("parties").querySelectorAll(".partie"),function(b,i){
         var x=bilan(sections[i]),c=b.querySelector(".etat");
         c.className="etat"+(x?" fait":"");
         c.style.background=x?x.couleur:"";
