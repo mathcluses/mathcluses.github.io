@@ -21,6 +21,25 @@
   // Après une erreur, l'élève lit la correction puis touche l'écran ou une touche ; sinon on passe au bout de 15 s.
   var PAUSE_JUSTE=1100, PAUSE_FAUX=15000;
 
+  // ===== MISE À JOUR AUTOMATIQUE =====
+  // Le navigateur garde les fichiers du site en mémoire (cache) jusqu'à 10 minutes : sans ça, après une mise en ligne,
+  // un élève pourrait encore voir l'ancienne version. À chaque page, on relit ce fichier-ci SANS cache (petite requête) :
+  // si sa VERSION est différente de celle qui tourne, on retélécharge les fichiers de la page et on la recharge, une fois.
+  // ► À CHAQUE MISE EN LIGNE : changer VERSION (n'importe quelle valeur nouvelle, par exemple la date et une lettre).
+  var VERSION="2026-11-20c";
+  (function(){
+    var moi=document.currentScript&&document.currentScript.src;
+    if(!moi||!window.fetch||location.protocol==="file:")return;
+    fetch(moi.split("?")[0],{cache:"no-store"}).then(function(r){return r.ok?r.text():""}).then(function(t){
+      var m=t.match(/var VERSION="([^"]*)"/);if(!m||m[1]===VERSION)return;
+      try{if(sessionStorage.getItem("flash6-maj")===m[1])return;sessionStorage.setItem("flash6-maj",m[1])}catch(e){return}   // une seule fois
+      // la page et tous les fichiers du site qu'elle a chargés (scripts, styles, images) : on remplace leur copie en cache
+      var urls=[location.href.split("#")[0]].concat(performance.getEntriesByType("resource").map(function(e){return e.name})
+        .filter(function(u){return u.indexOf(location.origin+"/")===0}));
+      Promise.all(urls.map(function(u){return fetch(u,{cache:"reload"}).catch(function(){})})).then(function(){location.reload()});
+    }).catch(function(){});
+  })();
+
   // ===== 1. OUTILS DONNÉS AUX GÉNÉRATEURS DE QUESTIONS (paramètre « h ») =====
   var nMedaille=0;
   var H={
