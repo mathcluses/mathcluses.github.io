@@ -34,7 +34,15 @@ h1{font-size:clamp(1.5rem,6vw,2rem);margin:0 0 .8rem;line-height:1.2}
 h2{font-size:1.2rem;margin:1.4rem 0 .6rem}
 .hide{display:none!important}
 .muted{color:var(--muted);margin:0}
-.retour{margin:0 0 .5rem;font-size:.95rem;display:flex;flex-wrap:wrap;gap:.2rem 1.2rem}.retour a{color:var(--muted)}
+.retour{margin:0 0 .5rem;font-size:.95rem;display:flex;flex-wrap:wrap;gap:.3rem 1.2rem}.retour a{color:var(--muted)}
+/* Les deux liens de retour : deux boutons de même taille, bien visibles ;
+   « les parties du chapitre » (le plus utile) en premier et en couleur, « tous les chapitres » à côté */
+.retour{gap:.5rem}
+.retour a.vers-parties,.retour a.vers-chapitres{display:inline-flex;align-items:center;min-height:2.3rem;padding:.3rem .9rem;border-radius:999px;
+  font-weight:700;font-size:.95rem;text-decoration:none;color:var(--ink);background:rgba(22,29,53,.7);border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.retour a.vers-parties{background:#4f46e5;border-color:#818cf8;color:#fff;box-shadow:0 4px 14px rgba(79,70,229,.45)}
+.retour a.hide{display:none}
 a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #4a7bdc;outline-offset:2px}
 
 /* Bandeau du chapitre (titre + illustration), replié pendant les questions */
@@ -137,6 +145,138 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .fig .trait{stroke:var(--ink);stroke-width:1.5;fill:none}
 .fig .point{fill:var(--ko)}
 .fig text{fill:var(--ink);font-family:inherit}
+
+/* Rapporteur (voir rapporteur.js) : plastique bleu transparent, graduation extérieure blanche, intérieure rose */
+.rp-corps{fill:rgba(129,140,248,.2);stroke:#a5b4fc;stroke-width:1.5}
+.rp-trou{fill:none;stroke:rgba(165,180,252,.5);stroke-width:1}
+.rp-trait{stroke:#e0e7ff;stroke-width:1}
+.rp-base{stroke:#e0e7ff;stroke-width:1.5}
+.rp-centre{stroke:#fbbf24;stroke-width:1.8;fill:none}
+.rp-ext,.rp-int{text-anchor:middle;font-family:var(--police);font-weight:700}
+.rp-ext{fill:#f1f5ff;font-size:13px}
+.rp-int{fill:#fda4af;font-size:10.5px}
+/* Demi-droites en turquoise vif et épaisses : on ne les confond pas avec le rapporteur (blanc / bleu / rose) */
+.rp-rayon{stroke:#22d3ee;stroke-width:4;stroke-linecap:round}
+.rp-sommet{fill:#22d3ee}
+.rp-arc{fill:none;stroke:#fbbf24;stroke-width:2.5}
+.rp-arc-tete{fill:#fbbf24}
+/* Atelier interactif (lire / tracer un angle) */
+.widget{display:block}
+.consigne-tracer{margin:0 0 .5rem;color:var(--muted);font-size:.98rem}
+.poignee-txt{display:inline-block;width:1.3em;height:1.3em;line-height:1.3em;text-align:center;border-radius:50%;background:#818cf8;color:#0b1020;font-weight:700}
+.fig.tracer{width:100%;max-width:100%;margin:0 0 .6rem;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;touch-action:none;user-select:none;-webkit-user-select:none}
+.fig.tracer.fixe .tr-rapporteur{pointer-events:none}
+.tr-rapporteur{cursor:grab}
+.tr-poignee{cursor:grab}
+.tr-poignee line{stroke:#818cf8;stroke-width:3}
+.tr-poignee circle{fill:#818cf8;stroke:#e0e7ff;stroke-width:2}
+.tr-poignee text{fill:#0b1020;font-size:16px;font-weight:700;text-anchor:middle}
+/* Lettres (O, x, B) : bien lisibles même par-dessus le rapporteur (contour sombre) */
+.tr-nom{fill:#fff;font-family:var(--police);font-size:20px;font-weight:800;text-anchor:middle;paint-order:stroke;stroke:#0b1020;stroke-width:5px;stroke-linejoin:round}
+.tr-noms{pointer-events:none}
+/* Rapporteur en rotation (appui long) : il s'illumine */
+.fig.tracer.rotation .rp-corps{fill:rgba(129,140,248,.4);stroke:#fbbf24;stroke-width:3}
+/* Correction animée : flèche jaune qui part du 0 et monte jusqu'à la mesure */
+.fl-arc{fill:none;stroke:#fbbf24;stroke-width:4;stroke-linecap:round}
+.fl-tete{fill:#fbbf24}
+.fl-zero{fill:#fbbf24}
+.fl-txt{fill:#fbbf24;font-family:var(--police);font-size:20px;font-weight:800;text-anchor:middle;paint-order:stroke;stroke:#0b1020;stroke-width:5px}
+.tr-fleche{pointer-events:none}
+/* Graduation lue, mise en lumière pendant la correction (même jaune que la flèche) */
+.sl-arc{fill:none;stroke:#fbbf24;stroke-width:9;stroke-linecap:round;opacity:.45}
+.sl-trait{stroke:#fbbf24;stroke-width:2.2}
+.sl-txt{fill:#fbbf24;font-family:var(--police);font-weight:900;font-size:16px;text-anchor:middle;paint-order:stroke;stroke:#0b1020;stroke-width:4px}
+.sl-txt.int{font-size:13.5px}
+/* pendant la correction, les nombres non parcourus s'effacent : on ne voit bien que ceux qu'on lit */
+.tr-corrige .rp-ext,.tr-corrige .rp-int{opacity:.3}
+/* mesure finale : pastille jaune, au bout de la flèche et sur la graduation d'arrivée */
+.pastille rect{fill:#fbbf24;stroke:#0b1020;stroke-width:2;filter:drop-shadow(0 0 5px rgba(251,191,36,.8))}
+.pastille text{fill:#0b1020;font-family:var(--police);font-weight:900;text-anchor:middle}
+/* Demi-droites données par-dessus le rapporteur : un léger halo pour bien les détacher */
+.tr-donne{pointer-events:none}
+.tr-donne .rp-rayon{filter:drop-shadow(0 0 3px rgba(34,211,238,.9))}
+.fig.tracer.tr-corrige .tr-rapporteur{opacity:1}
+.tr-trace{stroke:#f472b6;stroke-width:3;stroke-dasharray:8 6;stroke-linecap:round}
+.tr-croix{stroke:#f472b6;stroke-width:2.5;fill:none}
+.tr-bonne{stroke:#4ade80;stroke-width:3;stroke-dasharray:3 5;stroke-linecap:round}
+.tr-fini .tr-rapporteur{opacity:.55}
+.tr-boutons{margin-top:0}
+.tr-choix{margin-top:.2rem}
+
+/* Badge de niveau : on peut le toucher pour voir ses dernières séries */
+.partie .etat.fait{cursor:zoom-in}
+.partie .etat.fait:hover{outline:2px solid rgba(255,255,255,.6);outline-offset:2px}
+/* Panneau « mes dernières séries » */
+.panneau-fond{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:1rem;background:rgba(5,8,16,.7);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:fondu .2s}
+.panneau{position:relative;width:min(100%,30rem);max-height:90vh;overflow:auto;padding:1rem 1.1rem 1.1rem;border-radius:18px;
+  background:var(--paper);border:1px solid var(--line);box-shadow:0 12px 40px rgba(0,0,0,.6)}
+.panneau h2{margin:.1rem 0 .6rem;font-size:1.25rem;padding-right:4.5rem}
+.panneau .fermer{position:absolute;top:.8rem;right:.8rem}
+.panneau-niveau{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.55rem .9rem;border-radius:12px;font-size:1.1rem}
+.panneau-niveau .barres,.series .barres{display:inline-flex;align-items:flex-end;gap:3px;height:1rem;vertical-align:middle}
+.panneau-niveau .barres i,.series .barres i{width:.55rem;border-radius:2px;background:currentColor;opacity:.3}
+.panneau-niveau .barres i:nth-child(1),.series .barres i:nth-child(1){height:30%}.panneau-niveau .barres i:nth-child(2),.series .barres i:nth-child(2){height:55%}
+.panneau-niveau .barres i:nth-child(3),.series .barres i:nth-child(3){height:80%}.panneau-niveau .barres i:nth-child(4),.series .barres i:nth-child(4){height:100%}
+.panneau-niveau .barres i.on,.series .barres i.on{opacity:1}
+.panneau-expl{margin:.7rem 0;color:var(--muted)}
+.series{list-style:none;margin:0 0 .6rem;padding:0}
+.series li{display:grid;grid-template-columns:1fr auto;grid-template-areas:"date score" "niv score";gap:.1rem .8rem;align-items:center;
+  padding:.5rem .8rem;margin-bottom:.4rem;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-left:6px solid}
+.s-date{grid-area:date;color:var(--muted);font-size:.85rem}
+.s-compte{font-style:normal;font-size:.72rem;font-weight:700;color:#fde68a;border:1px solid rgba(253,230,138,.5);border-radius:999px;padding:0 .45rem;margin-left:.3rem}
+.s-score{grid-area:score;font-size:1.35rem}
+.s-niv{grid-area:niv;display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:.9rem}
+.petit-txt{font-size:.82rem}
+
+/* Titres à débloquer (par exemple « Permis rapporteur ») : carte façon permis, dorée une fois obtenue */
+.titres{margin-top:1.4rem}
+.titres h2{margin:0 0 .6rem}
+.titre{display:flex;align-items:center;gap:.8rem;padding:.8rem 1rem;border-radius:16px;margin-bottom:.6rem;
+  background:rgba(22,29,53,.6);border:1px dashed var(--line);color:var(--muted);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.titre-ill{flex:none;width:4.6rem;height:4.6rem;display:flex;align-items:center;justify-content:center;filter:grayscale(1);opacity:.55}
+.titre-ill .fig{margin:0;width:4.2rem;height:auto}
+.titre-ill .medaille{width:4.4rem;height:auto}
+.titre-txt{flex:1;display:flex;flex-direction:column;line-height:1.25}
+.titre-txt small{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+.titre-txt b{font-size:1.15rem;color:var(--ink)}
+.titre-txt span{font-size:.85rem}
+.titre-cadenas,.titre-medaille{flex:none;font-size:1.6rem}
+/* Titre obtenu : carte sombre bordée d'or (moins éblouissante qu'un aplat doré), la médaille en couleurs */
+.titre.obtenu{border:2px solid #fbbf24;color:#fde68a;background:linear-gradient(120deg,rgba(55,48,163,.75),rgba(22,29,53,.85));box-shadow:0 6px 24px rgba(251,191,36,.25)}
+.titre.obtenu .titre-txt b{color:#fde68a}
+.titre.obtenu .titre-ill{filter:drop-shadow(0 3px 8px rgba(251,191,36,.45));opacity:1}
+/* Célébration d'un nouveau titre, en 3 temps pilotés par flash.js (classes ajoutées l'une après l'autre) :
+   .ph-gris : l’écran se grise ; .ph-chute : la médaille tombe en grand ; .ph-impact : elle s’écrase (secousse) ;
+   .ph-tampon : le tampon « Validé » arrive ; .ph-coup : il tamponne (secousse) ; .ph-texte : le titre s’affiche.
+   Volontairement jouée même si l'ordinateur demande de réduire les animations (courte, une seule fois). */
+.celebration{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;
+  background:rgba(5,8,16,0);transition:background-color .5s,backdrop-filter .5s}
+.celebration.ph-gris{background:rgba(5,8,16,.86);-webkit-backdrop-filter:blur(5px) grayscale(1);backdrop-filter:blur(5px) grayscale(1)}
+.celebration.part{opacity:0;transition:opacity .35s}
+.cel-boite{position:relative;text-align:center;padding:1rem}
+.cel-medaille{width:min(64vw,18rem);margin:0 auto;opacity:0;filter:drop-shadow(0 14px 34px rgba(251,191,36,.5))}
+.cel-medaille .medaille{width:100%;height:auto;display:block}
+.celebration.ph-chute .cel-medaille{animation:chute .85s cubic-bezier(.55,0,1,.45) forwards}
+.celebration.ph-impact .cel-boite{animation:secousse .35s}
+.tampon{position:absolute;right:-1.2rem;top:calc(min(64vw,18rem)*.5 - .6rem);   /* au milieu du disque bleu de la médaille */padding:.35rem .9rem;border:5px double #ef4444;border-radius:10px;color:#ef4444;
+  font-family:var(--police);font-weight:900;font-size:clamp(1.5rem,7vw,2.4rem);letter-spacing:.12em;text-transform:uppercase;
+  background:rgba(239,68,68,.1);transform:rotate(-14deg);opacity:0;text-shadow:0 0 1px #ef4444}
+.celebration.ph-tampon .tampon{animation:tamponne .3s cubic-bezier(.6,0,1,.6) forwards}
+.celebration.ph-coup .cel-boite{animation:secousse2 .3s}
+.cel-titre{margin:1.2rem 0 .2rem;color:var(--muted);font-size:1.05rem;opacity:0;transition:opacity .5s}
+.cel-titre b{display:block;color:#fde68a;font-size:clamp(1.5rem,6vw,2rem)}
+.cel-suite{margin:.6rem 0 0;color:var(--muted);font-size:.9rem;opacity:0;transition:opacity .5s .4s}
+.celebration.ph-texte .cel-titre,.celebration.ph-texte .cel-suite{opacity:1}
+/* la médaille tombe d'en haut, en grand et en tournant, et accélère jusqu'à l'écran (puis la secousse de l'impact) */
+@keyframes chute{0%{opacity:1;transform:translateY(-120vh) scale(2.2) rotate(-30deg)}100%{opacity:1;transform:none}}
+/* le tampon arrive énorme et transparent, et s'écrase d'un coup */
+@keyframes tamponne{0%{opacity:0;transform:rotate(-14deg) scale(4)}100%{opacity:1;transform:rotate(-14deg) scale(1)}}
+@keyframes secousse{0%,100%{transform:none}20%{transform:translate(-6px,8px)}45%{transform:translate(5px,-5px)}70%{transform:translate(-3px,3px)}}
+@keyframes secousse2{0%,100%{transform:none}30%{transform:translate(4px,4px) scale(.985)}60%{transform:translate(-3px,-2px)}}
+.titre-gagne{margin:0 0 1rem;text-align:center;animation:saut .6s}
+.titre-gagne>span{display:block;font-size:1.3rem;font-weight:800;color:#fbbf24;margin-bottom:.4rem}
+.titre-gagne .titre{text-align:left}
 
 /* Résultat : une couleur et une échelle, pas de note */
 .resultat{border-radius:18px;padding:1.4rem 1rem;text-align:center;color:#fff;margin-bottom:1rem;box-shadow:var(--ombre);transition:background-color .6s}

@@ -8,27 +8,104 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Angles
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : ANGLES
+  D'après le programme de 6e (2025) : mesurer un angle, construire un angle de mesure donnée, lexique des angles.
+
+  LIRE et TRACER un angle se font chacun en 3 niveaux, avec le rapporteur de ../commun/rapporteur.js :
+   • niveau 1 : rapporteur déjà posé sur le sommet et aligné sur le 0 d'une demi-droite (à droite ou à gauche)
+   • niveau 2 : rapporteur posé sur le sommet, mais à tourner (poignée ⟳) pour l'aligner
+   • niveau 3 : rapporteur à placer sur le sommet (le faire glisser), puis à tourner
+  Ces questions sont INTERACTIVES (widget) : la figure gère elle-même la réponse.
+  Pour tracer : juste à 2° près, et encore compté juste (« pas très précis ») jusqu'à 5° (TOL_PARFAIT, TOL_JUSTE
+  dans rapporteur.js). Après une erreur, une animation montre comment placer le rapporteur et mesurer.
+  Le sommet s'appelle O, la demi-droite donnée [Ox).
+
+  Mode d'emploi général d'un type de questions : voir ../6qf-multiplication/index.html.
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/rapporteur.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Angles",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var RP=RAPPORTEUR;
+  // mesure au hasard, multiple de 5, entre 15° et 165°
+  function mesure(h){return h.rnd(3,33)*5}
+  // un type de questions « lire » ou « tracer » au niveau donné
+  function atelier(mode,niveau){
+    return {
+      nom: (mode==="lire"?"Lire":"Tracer")+" un angle, niveau "+niveau,
+      gen: function(h){
+        var a=mesure(h);
+        return { q: mode==="lire"?"Quelle est la mesure de cet angle ?":"Trace un angle <b>xOB</b> de <b>"+a+"°</b>.",
+                 r: a+"°", widget: RP.atelier({mode:mode,cible:a,niveau:niveau}) };
+      }
+    };
+  }
+  // Lire « sans partir de 0 » (niveau 1) : rapporteur posé droit, demi-droites sur deux graduations (ex. 40 et 140 → 100°)
+  var sansZero={
+    nom: "Lire un angle sans partir de 0",
+    gen: function(h){
+      var a=h.rnd(4,26)*5, b=h.rnd(3,(170-a)/5)*5;   // mesure de 20° à 130°, première demi-droite sur 15° ou plus
+      return { q: "Quelle est la mesure de cet angle ?", r: a+"°", widget: RP.atelier({mode:"lire",cible:a,niveau:1,debut:b}) };
+    }
+  };
+  // Une partie « lire, niveau 1 » de 10 questions : 9 questions classiques et 1 « sans partir de 0 »
+  // (le moteur répartit les questions équitablement entre les types de la liste).
+  var lire1=atelier("lire",1),typesLire1=[lire1,lire1,lire1,lire1,lire1,lire1,lire1,lire1,lire1,sansZero];
+
+  // les 6 natures d'angle (lexique du programme), avec leur définition pour la correction
+  var NATURES=[
+    {nom:"nul",   mesure:function(){return 0},   def:"un angle nul mesure 0°."},
+    {nom:"aigu",  mesure:function(h){return h.rnd(3,16)*5}, def:"un angle aigu mesure entre 0° et 90°."},
+    {nom:"droit", mesure:function(){return 90},  def:"un angle droit mesure 90°."},
+    {nom:"obtus", mesure:function(h){return h.rnd(19,34)*5}, def:"un angle obtus mesure entre 90° et 180°."},
+    {nom:"plat",  mesure:function(){return 180}, def:"un angle plat mesure 180° : un demi-tour, ses deux côtés sont dans le prolongement l’un de l’autre."},
+    {nom:"plein", mesure:function(){return 360}, def:"un angle plein mesure 360° : c’est un tour complet (la flèche fait tout le tour)."}
+  ];
+  // une question « nature d'un angle » : nature imposée (n), ou au hasard
+  function questionNature(h,n){
+    n=n||h.choix(NATURES);var a=n.mesure(h);
+    return { q: "Cet angle est…"+RP.figureAngle(a,h.rnd(0,35)*10),
+             choix: NATURES.map(function(x){return x.nom}), r: n.nom,
+             correction: "C’est un angle "+n.nom+" : "+n.def };
+  }
+  function nature(nom){
+    var n=NATURES.filter(function(x){return x.nom===nom})[0];
+    return { nom:"Reconnaître un angle "+nom, horsTest:true, gen:function(h){return questionNature(h,n)} };
+  }
+  var auHasard={ nom:"Reconnaître un angle nul, aigu, droit, obtus, plat ou plein", gen:function(h){return questionNature(h)} };
+  // Une série de 15 : au moins 4 aigus et 4 obtus (le plus important), 1 nul, 1 droit, 1 plat, 1 plein, et 3 au hasard
+  // (le moteur répartit les 15 questions entre les 15 types de la liste : chacun sort une fois, dans le désordre).
+  var aigu=nature("aigu"),obtus=nature("obtus");
+  var typesNature=[aigu,aigu,aigu,aigu,obtus,obtus,obtus,obtus,nature("nul"),nature("droit"),nature("plat"),nature("plein"),auHasard,auHasard,auHasard];
+
+  FLASH.chapitre({
+    titre: "Angles",
+    image: RP.icone(50),
+    nbQuestions: 10,
+    nbTest: 12,
+    // Titre à débloquer : les 6 parties au rapporteur en « Maîtrisé » (moyenne des 3 dernières séries)
+    titres: [{
+      nom: "Permis rapporteur",
+      medaille: ["PERMIS","RAPPORTEUR"],               // textes de la médaille (haut, bas)
+      parties: ["Lire un angle : rapporteur posé","Lire un angle : rapporteur à tourner","Lire un angle : rapporteur à placer",
+                "Tracer un angle : rapporteur posé","Tracer un angle : rapporteur à tourner","Tracer un angle : rapporteur à placer"],
+      seuil: .9,                                     // 9 sur 10 de moyenne sur les 6 parties : une erreur permise
+      condition: "Les 6 parties « Lire » et « Tracer » réussies",
+      bravo: "Tu sais lire et tracer un angle au rapporteur.",
+      tampon: "Validé"
+    }],
+    sections: [
+      { nom: "Lire un angle : rapporteur posé",    image: RP.icone(40),        types: typesLire1 },
+      { nom: "Lire un angle : rapporteur à tourner", image: RP.icone(115),     types: [atelier("lire",2)] },
+      { nom: "Lire un angle : rapporteur à placer",  image: RP.icone(70),      types: [atelier("lire",3)] },
+      { nom: "Tracer un angle : rapporteur posé",    image: RP.icone(60,true), types: [atelier("tracer",1)] },
+      { nom: "Tracer un angle : rapporteur à tourner", image: RP.icone(130,true), types: [atelier("tracer",2)] },
+      { nom: "Tracer un angle : rapporteur à placer",  image: RP.icone(35,true),  types: [atelier("tracer",3)] },
+      { nom: "Nature d’un angle", image: RP.figureAngle(120,10), nb: 15, types: typesNature }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

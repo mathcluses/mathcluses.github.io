@@ -24,7 +24,7 @@ var CHAPITRES_6E = [
   ]},
   { domaine: "Espace et géométrie", chapitres: [
     { titre: "Droites, parallèles, perpendiculaires", dossier: "6qf-droites",                 pret: false },
-    { titre: "Angles",                              dossier: "6qf-angles",                    pret: false },
+    { titre: "Angles",                              dossier: "6qf-angles",                    pret: true, themes: ["Géométrie"] },
     { titre: "Cercle",                              dossier: "6qf-cercle",                    pret: false },
     { titre: "Triangles et quadrilatères",          dossier: "6qf-triangles-quadrilateres",   pret: false },
     { titre: "Symétrie axiale",                     dossier: "6qf-symetrie-axiale",           pret: false }
