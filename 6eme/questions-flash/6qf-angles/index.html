@@ -24,6 +24,7 @@
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
 <script src="../commun/rapporteur.js"></script>
 <script>
 (function(){
@@ -84,14 +85,14 @@
     image: RP.icone(50),
     nbQuestions: 10,
     nbTest: 20,                                       // le test « tout le chapitre » : une série longue
-    // Titre à débloquer : les 6 parties au rapporteur en « Maîtrisé » (moyenne des 3 dernières séries)
+    // Titre à débloquer par un TEST (gros bouton en haut de la page) : 20 questions, rapporteur à placer puis à tourner :
+    // 10 angles à lire, 10 à tracer. Permis obtenu avec au moins 18 bonnes réponses (seuil non affiché aux élèves).
     titres: [{
       nom: "Permis rapporteur",
       medaille: ["PERMIS","RAPPORTEUR"],               // textes de la médaille (haut, bas)
-      parties: ["Lire un angle : rapporteur posé","Lire un angle : rapporteur à tourner","Lire un angle : rapporteur à placer",
-                "Tracer un angle : rapporteur posé","Tracer un angle : rapporteur à tourner","Tracer un angle : rapporteur à placer"],
-      seuil: .9,                                     // 9 sur 10 de moyenne sur les 6 parties : une erreur permise
-      condition: "Les 6 parties « Lire » et « Tracer » réussies",
+      test: { types: [atelier("lire",3), atelier("tracer",3)], nb: 20, reussite: 18,
+              echec: "Pas de permis cette fois… Continue à t’exercer avec les parties « Lire » et « Tracer » : tu feras mieux la prochaine fois !" },
+      condition: "20 questions : 10 angles à lire, 10 angles à tracer.",
       bravo: "Tu sais lire et tracer un angle au rapporteur.",
       tampon: "Validé"
     }],

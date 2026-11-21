@@ -26,7 +26,7 @@
   // un élève pourrait encore voir l'ancienne version. À chaque page, on relit ce fichier-ci SANS cache (petite requête) :
   // si sa VERSION est différente de celle qui tourne, on retélécharge les fichiers de la page et on la recharge, une fois.
   // ► À CHAQUE MISE EN LIGNE : changer VERSION (n'importe quelle valeur nouvelle, par exemple la date et une lettre).
-  var VERSION="2026-11-20d";
+  var VERSION="2026-11-22c";
   (function(){
     var moi=document.currentScript&&document.currentScript.src;
     if(!moi||!window.fetch||location.protocol==="file:")return;
@@ -68,7 +68,10 @@
 
     // Médaille d'un titre (par exemple « Permis rapporteur ») : écusson doré au bord dentelé, textes en arc,
     // petit rapporteur au centre, deux rubans. Chaque appel crée ses propres identifiants SVG (plusieurs médailles par page).
-    medaille:function(haut,bas){
+    // centre (facultatif) : texte écrit au centre à la place du rapporteur (par exemple « 3,14 »)
+    // style "legende" : badge légendaire de domaine (flammes animées), teinte "feu", "plasma" ou "emeraude"
+    medaille:function(haut,bas,centre,style,teinte){
+      if(style==="legende")return H.legende(haut,bas,centre,teinte);
       var id="md"+(nMedaille++),f=function(x){return (+x).toFixed(1)},pt=function(r,d){var a=d*Math.PI/180;return [r*Math.cos(a),-r*Math.sin(a)]};
       var s='<svg class="medaille" viewBox="0 0 200 222" aria-hidden="true"><defs>'+
         '<linearGradient id="'+id+'o" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4b8"/><stop offset=".45" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/></linearGradient>'+
@@ -77,14 +80,59 @@
       s+='<path d="M68 148 L50 216 L71 203 L84 220 L97 160 Z" fill="#4f46e5"/><path d="M132 148 L150 216 L129 203 L116 220 L103 160 Z" fill="#db2777"/>';   // rubans
       for(var i=0;i<30;i++){var a=i*2*Math.PI/30;s+='<circle cx="'+f(100+88*Math.cos(a))+'" cy="'+f(100+88*Math.sin(a))+'" r="9" fill="url(#'+id+'o)"/>'}   // bord dentelé
       s+='<circle cx="100" cy="100" r="88" fill="url(#'+id+'o)"/><circle cx="100" cy="100" r="68" fill="url(#'+id+'f)" stroke="#fde68a" stroke-width="3"/>';
+      if(centre)s+='<text x="100" y="114" style="font-family:ui-rounded,\'Segoe UI\',Roboto,Arial,sans-serif;font-weight:900;font-size:'+(centre.length>4?30:38)+'px;fill:#fde68a;text-anchor:middle;dominant-baseline:middle">'+centre+'</text>';
+      else{
       s+='<g transform="translate(100 116)"><path d="M-44 0 A44 44 0 0 1 44 0 Z" fill="rgba(165,180,252,.3)" stroke="#fde68a" stroke-width="2.5"/>';   // petit rapporteur
       for(var d=0;d<=180;d+=15){var p1=pt(44,d),p2=pt(d%45?38:34,d);s+='<line x1="'+f(p1[0])+'" y1="'+f(p1[1])+'" x2="'+f(p2[0])+'" y2="'+f(p2[1])+'" stroke="#fde68a" stroke-width="2"/>'}
       var r=pt(56,50),q=pt(16,50);
       s+='<line x1="0" y1="0" x2="56" y2="0" stroke="#22d3ee" stroke-width="4" stroke-linecap="round"/><line x1="0" y1="0" x2="'+f(r[0])+'" y2="'+f(r[1])+'" stroke="#22d3ee" stroke-width="4" stroke-linecap="round"/>'+
         '<path d="M16 0 A16 16 0 0 0 '+f(q[0])+' '+f(q[1])+'" fill="none" stroke="#fbbf24" stroke-width="3"/><circle r="4" fill="#fbbf24"/></g>';
+      }
       var txt='font-family:ui-rounded,\'Segoe UI\',Roboto,Arial,sans-serif;font-weight:900;letter-spacing:.12em;fill:#3b2200;text-anchor:middle';
       s+='<text style="'+txt+';font-size:17px"><textPath href="#'+id+'h" startOffset="50%">'+haut+'</textPath></text>'+
          '<text style="'+txt+';font-size:14px"><textPath href="#'+id+'b" startOffset="50%">'+bas+'</textPath></text>';
+      return s+'</svg>';
+    },
+
+    // Badge LÉGENDAIRE d'un domaine (Nombres et calculs, Géométrie, Grandeurs et mesures) : un écusson hexagonal
+    // dans un brasier de flammes animées, un halo qui pulse, un reflet qui passe, des étincelles. L'animation est
+    // en CSS (classes lg-…, dans STYLE_MEDAILLES plus bas) : elle marche sur toutes les pages qui montrent les médailles.
+    legende:function(haut,bas,centre,teinte){
+      var id="lg"+(nMedaille++),f=function(x){return (+x).toFixed(1)};
+      var P={feu:{fl:["#fff7ae","#fde047","#f97316","#b91c1c"],em:["#7c2d12","#1c0a05"],ac:"#fde047",ru:["#dc2626","#7f1d1d"]},
+             plasma:{fl:["#f5f3ff","#c4b5fd","#8b5cf6","#be185d"],em:["#4c1d95","#0f0720"],ac:"#e9d5ff",ru:["#7c3aed","#3b0764"]},
+             emeraude:{fl:["#f0fdf4","#86efac","#10b981","#0e7490"],em:["#064e3b","#02130f"],ac:"#a7f3d0",ru:["#059669","#064e3b"]}}[teinte||"feu"];
+      var hex=function(r,cx,cy){var p=[];for(var i=0;i<6;i++){var a=(60*i)*Math.PI/180;p.push(f(cx+r*Math.cos(a))+" "+f(cy+r*Math.sin(a)))}return "M"+p.join(" L")+" Z"};
+      var s='<svg class="medaille legende" viewBox="0 0 200 240" aria-hidden="true"><defs>'+
+        '<linearGradient id="'+id+'f" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="'+P.fl[3]+'"/><stop offset=".45" stop-color="'+P.fl[2]+'"/><stop offset=".8" stop-color="'+P.fl[1]+'"/><stop offset="1" stop-color="'+P.fl[0]+'"/></linearGradient>'+
+        '<linearGradient id="'+id+'g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="'+P.fl[2]+'"/><stop offset="1" stop-color="'+P.fl[0]+'"/></linearGradient>'+
+        '<radialGradient id="'+id+'h"><stop offset="0" stop-color="'+P.fl[2]+'" stop-opacity=".75"/><stop offset="1" stop-color="'+P.fl[3]+'" stop-opacity="0"/></radialGradient>'+
+        '<linearGradient id="'+id+'o" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff7c2"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#92400e"/></linearGradient>'+
+        '<radialGradient id="'+id+'e" cx=".5" cy=".3" r=".8"><stop offset="0" stop-color="'+P.em[0]+'"/><stop offset="1" stop-color="'+P.em[1]+'"/></radialGradient>'+
+        '<linearGradient id="'+id+'r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+P.ru[0]+'"/><stop offset="1" stop-color="'+P.ru[1]+'"/></linearGradient>'+
+        '<clipPath id="'+id+'c"><path d="'+hex(52,100,118)+'"/></clipPath></defs>';
+      s+='<circle class="lg-halo" cx="100" cy="118" r="96" fill="url(#'+id+'h)"/>';
+      // le brasier : grandes flammes derrière l'écusson (de part et d'autre et au-dessus), puis petites flammes claires
+      var fl="M0 0 C-15 -9 -18 -33 -5 -60 C-3 -45 5 -41 8 -54 C18 -34 15 -9 0 0 Z";
+      [[-62,150,-38,1.25],[-50,108,-24,1.35],[-30,80,-12,1.4],[0,68,0,1.6],[30,80,12,1.4],[50,108,24,1.35],[62,150,38,1.25],[-22,176,-8,1],[22,176,8,1]].forEach(function(q,i){
+        s+='<g transform="translate('+(100+q[0])+' '+q[1]+') rotate('+q[2]+') scale('+q[3]+')"><path class="lg-fl" style="animation-delay:-'+(i*.13).toFixed(2)+'s" d="'+fl+'" fill="url(#'+id+'f)"/></g>';
+      });
+      [[-40,112,-20,.8],[0,74,0,.9],[40,112,20,.8]].forEach(function(q,i){
+        s+='<g transform="translate('+(100+q[0])+' '+q[1]+') rotate('+q[2]+') scale('+q[3]+')"><path class="lg-fl lg-fl2" style="animation-delay:-'+(i*.21+.1).toFixed(2)+'s" d="'+fl+'" fill="url(#'+id+'g)"/></g>';
+      });
+      // l'écusson : bord doré, fond sombre, symbole au centre, reflet qui passe
+      s+='<path d="'+hex(64,100,118)+'" fill="url(#'+id+'o)"/><path d="'+hex(52,100,118)+'" fill="url(#'+id+'e)" stroke="#fde68a" stroke-width="2"/>';
+      s+='<g clip-path="url(#'+id+'c)"><rect class="lg-reflet" x="40" y="50" width="26" height="140" fill="#fff" opacity=".18"/></g>';
+      var police='font-family:ui-rounded,\'Segoe UI\',Roboto,Arial,sans-serif;font-weight:900;text-anchor:middle';
+      s+='<text x="100" y="'+(centre&&centre.length>2?130:134)+'" style="'+police+';font-size:'+(centre&&centre.length>2?38:50)+'px;fill:'+P.ac+';stroke:#1c0a05;stroke-width:1.5;paint-order:stroke">'+(centre||"★")+'</text>';
+      s+='<text x="100" y="94" style="'+police+';font-size:11px;letter-spacing:.28em;fill:#fde68a">'+haut+'</text>';
+      // bannière du bas
+      s+='<path d="M14 176 L34 168 L166 168 L186 176 L166 184 L166 200 L34 200 L34 184 Z" fill="url(#'+id+'r)" stroke="#fde68a" stroke-width="2"/>'+
+         '<text x="100" y="189" style="'+police+';font-size:'+(bas.length>14?10.5:13)+'px;letter-spacing:.08em;fill:#fff7c2">'+bas+'</text>';
+      // étincelles
+      [[30,60,0],[172,72,.6],[18,128,1.1],[182,140,.3],[60,30,.9],[146,36,1.4]].forEach(function(e){
+        s+='<path class="lg-et" style="animation-delay:'+e[2]+'s" d="M'+e[0]+' '+(e[1]-6)+' L'+(e[0]+1.6)+' '+(e[1]-1.6)+' L'+(e[0]+6)+' '+e[1]+' L'+(e[0]+1.6)+' '+(e[1]+1.6)+' L'+e[0]+' '+(e[1]+6)+' L'+(e[0]-1.6)+' '+(e[1]+1.6)+' L'+(e[0]-6)+' '+e[1]+' L'+(e[0]-1.6)+' '+(e[1]-1.6)+' Z" fill="'+P.fl[0]+'"/>';
+      });
       return s+'</svg>';
     },
 
@@ -278,7 +326,8 @@
     // Bandeau du chapitre : titre + illustration du chapitre (def.image)
     '<header class="bandeau"><div><span class="sur">Questions flash · 6e</span><h1 id="titre"></h1></div><span class="ill-chap" id="illchap" aria-hidden="true"></span></header>'+
     // Choix de la partie : un bouton = une série qui démarre tout de suite
-    '<section id="accueil"><p class="muted" id="intro"></p><div class="parties" id="parties"></div><div class="titres hide" id="titres"></div></section>'+
+    // (les titres à débloquer, par exemple le Permis rapporteur, sont en haut : c'est là qu'on lance leur test)
+    '<section id="accueil"><div class="titres hide" id="titres"></div><p class="muted" id="intro"></p><div class="parties" id="parties"></div></section>'+
     // Question (toucher la carte après une réponse fait passer plus vite à la suivante)
     '<section class="card hide" id="carte" aria-live="polite">'+
       '<div class="top"><span class="muted" id="prog"></span><button class="sec petit" id="stop">Quitter</button></div>'+
@@ -320,7 +369,23 @@
     '.medaille-cote span{display:none}'+
     '@keyframes brille{to{filter:drop-shadow(0 4px 12px rgba(0,0,0,.6)) drop-shadow(0 0 18px rgba(251,191,36,.75))}}'+
     '@media (min-width:62rem){#mes-medailles{top:50%;left:1.1rem;right:auto;transform:translateY(-50%)}'+
-      '.medaille-cote{width:8.4rem}.medaille-cote span{display:block;margin-top:.35rem;font:800 1rem/1.2 ui-rounded,"Segoe UI",Roboto,sans-serif;color:#fde68a;text-shadow:0 1px 4px #000}}';
+      '.medaille-cote{width:8.4rem}.medaille-cote span{display:block;margin-top:.35rem;font:800 1rem/1.2 ui-rounded,"Segoe UI",Roboto,sans-serif;color:#fde68a;text-shadow:0 1px 4px #000}'+
+      // beaucoup de médailles : plus petites, sans nom, sur plusieurs colonnes
+      '#mes-medailles.nombreux{flex-wrap:wrap;max-height:92vh;align-content:flex-start}#mes-medailles.nombreux .medaille-cote{width:4.3rem}#mes-medailles.nombreux .medaille-cote span{display:none}}'+
+    // téléphone : 3 médailles au plus (les légendaires d'abord)
+    '@media (max-width:61.99rem){.medaille-cote:nth-child(n+4){display:none}}'+
+    // BADGES LÉGENDAIRES : flammes qui dansent, halo qui pulse, reflet qui passe, étincelles
+    '.medaille.legende{overflow:visible}'+
+    '.lg-fl{transform-box:fill-box;transform-origin:50% 100%;animation:lgfl .75s ease-in-out infinite alternate}'+
+    '.lg-fl2{animation-duration:.55s;opacity:.9}'+
+    '@keyframes lgfl{0%{transform:scale(.86,.8) skewX(-6deg)}50%{transform:scale(1.05,1.12) skewX(4deg)}100%{transform:scale(.95,.96) skewX(-2deg)}}'+
+    '.lg-halo{transform-box:fill-box;transform-origin:50% 50%;animation:lgha 1.8s ease-in-out infinite alternate}'+
+    '@keyframes lgha{from{opacity:.5;transform:scale(.9)}to{opacity:1;transform:scale(1.08)}}'+
+    '.lg-reflet{transform-box:fill-box;animation:lgre 3.2s ease-in-out infinite}'+
+    '@keyframes lgre{0%{transform:translateX(-60px) skewX(-18deg)}55%,100%{transform:translateX(150px) skewX(-18deg)}}'+
+    '.lg-et{transform-box:fill-box;transform-origin:50% 50%;animation:lget 1.7s ease-in-out infinite;opacity:0}'+
+    '@keyframes lget{0%,100%{opacity:0;transform:scale(.2) rotate(0)}50%{opacity:1;transform:scale(1.1) rotate(45deg)}}'+
+    '.medaille-cote.leg{filter:drop-shadow(0 0 14px rgba(249,115,22,.7));animation:none}';
   function afficherMedailles(){
     var liste=[];
     try{
@@ -333,9 +398,12 @@
     }
     var c=document.getElementById("mes-medailles");
     if(!c){c=document.createElement("div");c.id="mes-medailles";c.setAttribute("aria-label","Mes titres");document.body.appendChild(c)}
-    c.className=liste.length?"":"hide";
+    // les légendaires d'abord, puis les « Maître… », puis les permis
+    var rang=function(o){return o.medaille[3]==="legende"?0:/^MAÎTRE/.test(o.medaille[0])?1:2};
+    liste.sort(function(a,b){return rang(a)-rang(b)});
+    c.className=liste.length?(liste.length>4?"nombreux":""):"hide";
     c.innerHTML=liste.map(function(o){
-      return '<div class="medaille-cote" title="'+esc(o.nom||"")+'">'+H.medaille(o.medaille[0],o.medaille[1])+'<span>'+esc(o.nom||"")+'</span></div>';
+      return '<div class="medaille-cote'+(o.medaille[3]==="legende"?" leg":"")+'" title="'+esc(o.nom||"")+'">'+H.medaille.apply(null,o.medaille)+'<span>'+esc(o.nom||"")+'</span></div>';
     }).join("");
   }
 
@@ -361,7 +429,8 @@
     var placeTest=null;
     var sections=(def.sections||[{nom:"Commencer",types:def.types||[]}]).map(function(s){
       if(s.test){placeTest=s;return s}
-      return {nom:s.nom,affiche:s.affiche,groupe:s.groupe,image:s.image,nb:s.nb,types:(s.types||[]).filter(ok).map(function(t){t.section=s.nom;return t})};
+      // commeTest : une partie « test » écrite à la main (par exemple le test d'une opération) : même allure que le test
+      return {nom:s.nom,affiche:s.affiche,groupe:s.groupe,image:s.image,nb:s.nb,commeTest:s.commeTest,tutos:s.tutos,types:(s.types||[]).filter(ok).map(function(t){if(!t.section)t.section=s.nom;return t})};   // un type présent dans plusieurs parties (et un test) garde sa première partie
     }).filter(function(s){return s.test||s.types.length});
     var iTest=sections.indexOf(placeTest);if(iTest>=0)sections.splice(iTest,1);
 
@@ -375,7 +444,7 @@
     // (un type répété dans une partie, pour régler sa fréquence, ne compte qu'une fois au test ;
     //  un type marqué horsTest ne sert qu'à sa partie, par exemple « angle aigu » imposé)
     var tous=[].concat.apply([],sections.map(function(s){return s.types})).filter(function(t,i,l){return l.indexOf(t)===i&&!t.horsTest});
-    if(sections.length>1){
+    if(sections.length>1&&def.testAuto!==false){   // def.testAuto: false → pas de test automatique (le chapitre a ses propres tests)
       var test={nom:(placeTest&&placeTest.nom)||"Test : tout le chapitre",groupe:placeTest&&placeTest.groupe,test:true,types:tous,
         image:def.imageTest||'<span class="ill-test">'+sections.slice(0,4).map(function(s){return '<span>'+(s.image||"")+'</span>'}).join("")+'</span>'};
       if(iTest>=0)sections.splice(iTest,0,test);else sections.push(test);
@@ -414,8 +483,10 @@
     sections.forEach(function(s,i){
       if(s.groupe&&(i===0||sections[i-1].groupe!==s.groupe)){   // titre de catégorie
         var g=document.createElement("h3");g.className="groupe-parties";g.textContent=s.groupe;$("parties").appendChild(g);
+        // place des titres de cette catégorie (t.groupe), par exemple le permis d'une opération
+        var zt=document.createElement("div");zt.className="titres hide";zt.setAttribute("data-groupe",s.groupe);$("parties").appendChild(zt);
       }
-      var b=document.createElement("button");b.type="button";b.className="partie"+(s.test?" test":"");
+      var b=document.createElement("button");b.type="button";b.className="partie"+(s.test||s.commeTest?" test":"");
       b.innerHTML=(s.image?'<span class="ill" aria-hidden="true">'+s.image+'</span>':'')+'<span class="nom">'+esc(s.affiche||s.nom)+'</span><span class="etat"></span>';
       // toucher le badge de niveau ouvre les dernières séries ; toucher le reste du bouton lance une série
       b.addEventListener("click",function(e){
@@ -423,6 +494,8 @@
         nouvelleSerie(i);
       });
       $("parties").appendChild(b);
+      // tutos animés de la partie (géométrie : commun/tuto.js), juste sous son bouton
+      if(s.tutos&&window.TUTO)$("parties").appendChild(TUTO.boutons(s.tutos));
     });
 
     // Panneau « mes dernières séries » d'une partie : le niveau actuel expliqué, puis les 10 dernières séries
@@ -462,18 +535,41 @@
       majTitres();
     }
 
-    // TITRES à débloquer (def.titres) : { nom, parties:[noms de parties], image, condition, bravo, tampon, seuil }.
+    // TITRES à débloquer (def.titres) : { nom, image, condition, bravo, tampon, puis SOIT test, SOIT parties + seuil }.
     //   image : texte HTML, ou fonction qui le fabrique (une médaille SVG neuve à chaque affichage)
-    // Un titre est obtenu quand toutes ses parties ont été faites, avec une moyenne générale d'au moins
-    // t.seuil (0,9 par défaut : « 9 sur 10 », une erreur permise en moyenne), calculée sur les moyennes des
-    // 3 dernières séries de chaque partie. Une fois obtenu, il est gardé (avec sa date), même si un résultat baisse.
+    //   test : { types:[…], nb: 20, reussite: 18, echec: "message" } → la carte du titre est un gros bouton qui lance
+    //     un test de nb questions (réparties équitablement entre les types) ; le titre est obtenu avec au moins
+    //     « reussite » bonnes réponses. Sinon, le message « echec » s'affiche (le seuil n'est pas montré aux élèves).
+    //   serie : { partie: "Test : tout le chapitre", fois: 3, minimum: 17 } → obtenu quand les « fois » dernières séries
+    //     de cette partie ont chacune au moins « minimum » bonnes réponses (d'affilée). La carte est un gros bouton qui
+    //     lance cette partie et montre le compteur (0 / 3, 1 / 3…) ; le minimum n'est pas montré aux élèves.
+    //   requiert : [{chapitre, nom}, …] → obtenu quand tous ces titres (d'autres chapitres) sont obtenus. Avec t.chapitre,
+    //     le titre est enregistré sous ce nom de chapitre : on peut alors l'afficher dans plusieurs chapitres (un seul titre).
+    //   medaille : [texte du haut, texte du bas, texte du centre (facultatif, sinon un rapporteur)]
+    //   groupe : (facultatif) la carte du titre est placée sous le titre de cette catégorie de parties, pas en haut
+    //   parties + seuil : le titre est obtenu quand toutes ces parties ont été faites, avec une moyenne générale d'au moins
+    //     t.seuil (0,9 par défaut), calculée sur les moyennes des 3 dernières séries de chaque partie.
+    // Une fois obtenu, un titre est gardé (avec sa date), même si un résultat baisse.
     // La première fois : la médaille tombe sur l'écran et un tampon « validé » s'y écrase ; ensuite elle reste
     // affichée sur le côté de l'écran. Comme les pastilles, c'est enregistré dans le navigateur de l'appareil.
-    var titres=def.titres||[];
-    function cleTitre(t){return "flash6|"+def.titre+"|titre|"+t.nom}
+    // titres du chapitre + badge légendaire de son domaine (../commun/domaines.js, s'il est chargé)
+    var titres=(def.titres||[]).concat(window.DOMAINES_6E?DOMAINES_6E.titresDe(def.titre):[]);
+    function legendaire(t){return t.medaille&&t.medaille[3]==="legende"}
+    function cleTitre(t){return "flash6|"+(t.chapitre||def.titre)+"|titre|"+t.nom}
     // image d'un titre : sa médaille (t.medaille = [texte du haut, texte du bas]), sinon t.image
-    function imageTitre(t){return t.medaille?H.medaille(t.medaille[0],t.medaille[1]):typeof t.image==="function"?t.image():(t.image||"🏅")}
+    function imageTitre(t){return t.medaille?H.medaille.apply(null,t.medaille):typeof t.image==="function"?t.image():(t.image||"🏅")}
     function etatTitre(t){
+      if(t.test){var o0=lireTitre(cleTitre(t));return {obtenable:false,date:o0&&o0.date}}   // obtenu seulement par son test
+      if(t.requiert){                                // titres d'autres chapitres déjà obtenus
+        var o2=lireTitre(cleTitre(t)),n=t.requiert.filter(function(r){return lireTitre("flash6|"+r.chapitre+"|titre|"+r.nom)}).length;
+        return {faits:n,total:t.requiert.length,obtenable:n===t.requiert.length,date:o2&&o2.date};
+      }
+      if(t.serie){                                   // compteur : séries réussies d'affilée, en partant de la dernière
+        var o1=lireTitre(cleTitre(t)),sp=partieSerie(t),l=sp?series(sp):[],c=0;
+        for(var i=l.length-1;i>=0&&l[i].b>=t.serie.minimum;i--)c++;
+        c=Math.min(c,t.serie.fois);
+        return {compte:c,obtenable:c>=t.serie.fois,date:o1&&o1.date};
+      }
       var b=t.parties.map(function(n){var s=sections.filter(function(x){return x.nom===n})[0];return s&&bilan(s)}).filter(Boolean);
       var moy=b.length?b.reduce(function(a,x){return a+x.moy},0)/b.length:0,o=lireTitre(cleTitre(t));
       return {faits:b.length,total:t.parties.length,moy:moy,obtenable:b.length===t.parties.length&&moy>=(t.seuil||.9)-1e-9,date:o&&o.date};
@@ -482,20 +578,29 @@
       var nouveaux=[];
       titres.forEach(function(t){
         var e=etatTitre(t);
-        if(e.obtenable&&!e.date){
-          // on garde aussi le nom et la médaille : toutes les pages pourront l'afficher (voir afficherMedailles)
-          try{localStorage.setItem(cleTitre(t),JSON.stringify({date:new Date().toLocaleDateString("fr-FR"),nom:t.nom,medaille:t.medaille||null}))}catch(_){}
-          nouveaux.push(t);
-        }
+        if(e.obtenable&&!e.date){donnerTitre(t);nouveaux.push(t)}
       });
       return nouveaux;
     }
-    function carteTitre(t){
-      var e=etatTitre(t),ok=!!e.date;
-      return '<div class="titre'+(ok?' obtenu':'')+'"><span class="titre-ill" aria-hidden="true">'+imageTitre(t)+'</span>'+
+    // on garde aussi le nom et la médaille : toutes les pages pourront l'afficher (voir afficherMedailles)
+    function donnerTitre(t){
+      try{localStorage.setItem(cleTitre(t),JSON.stringify({date:new Date().toLocaleDateString("fr-FR"),nom:t.nom,medaille:t.medaille||null}))}catch(_){}
+    }
+    // carte d'un titre ; avec un test (t.test), c'est un gros bouton qui lance le test (même une fois obtenu : pour s'entraîner)
+    function partieSerie(t){return sections.filter(function(s){return s.nom===t.serie.partie})[0]}
+    function carteTitre(t,sansBouton){
+      var e=etatTitre(t),ok=!!e.date,bouton=(t.test||t.serie)&&!sansBouton;
+      var detail=ok?esc(t.bravo||""):esc(t.condition||"")+(t.test?"":t.serie?' <b class="compteur">'+e.compte+" / "+t.serie.fois+"</b>":t.requiert?' <b class="compteur">'+e.faits+" / "+e.total+"</b>":" · "+e.faits+" / "+e.total+" parties faites");
+      return '<'+(bouton?'button type="button" data-titre="'+titres.indexOf(t)+'"':'div')+' class="titre'+(ok?' obtenu':'')+(bouton?' a-passer':'')+(legendaire(t)?' legende':'')+'">'+
+        '<span class="titre-ill" aria-hidden="true">'+imageTitre(t)+'</span>'+
         '<span class="titre-txt"><small>'+(ok?"Titre obtenu le "+e.date:"Titre à débloquer")+'</small><b>'+esc(t.nom)+'</b>'+
-        '<span>'+(ok?esc(t.bravo||""):esc(t.condition||"")+" · "+e.faits+" / "+e.total+" parties faites")+'</span></span>'+
-        (ok?'':'<span class="titre-cadenas" aria-hidden="true">🔒</span>')+'</div>';
+        '<span>'+detail+'</span>'+(bouton?'<em class="titre-go">'+(ok?"Le repasser":"Passer le test")+' →</em>':'')+'</span>'+
+        (ok||bouton?'':'<span class="titre-cadenas" aria-hidden="true">🔒</span>')+'</'+(bouton?'button':'div')+'>';
+    }
+    // Test d'un titre : une « partie » à part, qui n'est pas dans la liste des parties
+    function lancerTestTitre(t){
+      var types=t.test.types.filter(ok).map(function(x){x.section=t.nom;return x});
+      lancer({nom:t.nom,permis:t,nb:t.test.nb||20,types:types});
     }
     function majTitres(){
       // titres enregistrés à l'ancien format (juste la date) : on ajoute leur médaille
@@ -504,28 +609,48 @@
         if(o&&!o.medaille&&t.medaille)try{localStorage.setItem(cleTitre(t),JSON.stringify({date:o.date,nom:t.nom,medaille:t.medaille}))}catch(_){}
       });
       afficherMedailles();
-      var z=$("titres");if(!titres.length)return;
-      z.className="titres";z.innerHTML='<h2>Mes titres</h2>'+titres.map(carteTitre).join("");
+      if(!titres.length)return;
+      // titres sans catégorie : en haut de la page ; titres d'une catégorie (t.groupe) : sous le titre de la catégorie
+      var places=[$("titres")].concat([].slice.call($("parties").querySelectorAll("[data-groupe]")));
+      places.forEach(function(z){
+        var g=z.getAttribute("data-groupe"),l=titres.filter(function(t){return g?t.groupe===g:!t.groupe});
+        z.className="titres"+(g?" titres-groupe":"")+(l.length?"":" hide");
+        z.innerHTML=l.map(function(t){return carteTitre(t)}).join("");
+      });
+      [].forEach.call($("accueil").querySelectorAll("[data-titre]"),function(b){
+        b.addEventListener("click",function(){
+          var t=titres[+b.getAttribute("data-titre")];
+          if(t.test)lancerTestTitre(t);else if(partieSerie(t))lancer(partieSerie(t));
+        });
+      });
     }
     // Première obtention, en 3 temps : (1) l'écran se grise ; (2) la médaille tombe en grand et s'écrase sur l'écran
     // (petite secousse) ; (3) le tampon « Validé » arrive et tamponne (deuxième secousse). Toucher l'écran pour fermer.
-    function celebrer(t){
-      var c=document.createElement("div");c.className="celebration";c.setAttribute("role","dialog");
+    // Plusieurs titres d'un coup (un permis qui complète le titre ultime) : les célébrations s'enchaînent.
+    function celebrer(liste){
+      liste=[].concat(liste);var t=liste[0];
+      var c=document.createElement("div");c.className="celebration"+(legendaire(t)?" leg":"");c.setAttribute("role","dialog");
       c.innerHTML='<div class="cel-boite"><div class="cel-medaille">'+imageTitre(t)+'</div>'+
         '<div class="tampon">'+esc(t.tampon||"Validé")+'</div>'+
         '<p class="cel-titre">Nouveau titre<b>'+esc(t.nom)+'</b></p><p class="cel-suite">Touche l’écran pour continuer</p></div>';
-      c.addEventListener("click",function(e){e.stopPropagation();c.classList.add("part");setTimeout(function(){c.remove()},350)});
+      c.addEventListener("click",function(e){
+        e.stopPropagation();c.classList.add("part");
+        setTimeout(function(){c.remove();if(liste.length>1)celebrer(liste.slice(1))},350);
+      });
       document.body.appendChild(c);
       var phase=function(nom,ms){setTimeout(function(){c.classList.add(nom)},ms)};
       phase("ph-gris",30);phase("ph-chute",600);phase("ph-impact",1450);phase("ph-tampon",2000);phase("ph-coup",2300);phase("ph-texte",2700);
     }
     majEtats();
+    // titre ultime complété dans un autre chapitre : il est donné (et fêté) en arrivant ici
+    (function(){var nv=verifierTitres();if(nv.length){majTitres();celebrer(nv)}})();
 
-    var sec=0,serie=[],k=0,rep=[],fini=false,attente=null,affichee=0;
+    var cour=null,serie=[],k=0,rep=[],fini=false,attente=null,affichee=0;   // cour : la partie (ou le test de titre) en cours
 
     // Une série : les questions sont réparties équitablement entre les types de la partie, puis mélangées.
-    function nouvelleSerie(i){
-      sec=i;var s=sections[i];
+    function nouvelleSerie(i){lancer(sections[i])}
+    function lancer(s){
+      cour=s;
       var n=Math.min(25,s.test?(def.nbTest||20):(s.nb||def.nbQuestions||10)),liste=[];   // s.nb : nombre propre à une partie
       var types=H.melange(s.types);                 // au test, chaque série tombe sur des types différents
       for(var j=0;j<n;j++)liste.push(types[j%types.length]);
@@ -540,7 +665,7 @@
       k=0;rep=[];
       $("accueil").className="hide";$("fin").className="hide";$("carte").className="card";
       main.className="en-serie";                     // pendant les questions, le bandeau se replie (place sur téléphone)
-      if(sections.length>1)$("versParties").className="vers-parties";   // lien de retour vers les parties du chapitre
+      if(sections.length>1||s.permis)$("versParties").className="vers-parties";   // lien de retour vers les parties du chapitre
       document.body.classList.add("en-serie");       // … et le fond s'assombrit (plus de concentration)
       majEchelle();afficher();
     }
@@ -559,7 +684,7 @@
 
     function afficher(){
       var q=serie[k];fini=false;affichee=Date.now();
-      $("prog").textContent="Question "+(k+1)+" / "+serie.length+(sections[sec].test&&q.section?" · "+q.section:"");
+      $("prog").textContent="Question "+(k+1)+" / "+serie.length+((cour.test||cour.commeTest)&&q.section?" · "+q.section:cour.permis?" · "+cour.nom:"");
       $("q").innerHTML=q.q;
       $("fb").className="";$("fb").innerHTML="";
       $("passer").className="muted passer hide";
@@ -569,7 +694,7 @@
         q.widget(z,function(ok,reponse,correction,o){if(!fini)conclure(ok,reponse,correction,o)},H);
         window.scrollTo(0,0);return;
       }
-      z.className="choix"+(q.choix.length>4?" nombreux":"");
+      z.className="choix"+(q.choix.length>4&&!q.large?" nombreux":"");   // q.large : propositions longues, sur 2 colonnes
       q.choix.forEach(function(c){
         var b=document.createElement("button");b.type="button";b.innerHTML=String(c);
         // les propositions ignorent les clics pendant un court instant : un double-clic pour passer
@@ -618,15 +743,33 @@
       k++;
       if(k<serie.length){afficher();return}
       $("carte").className="card hide";$("fin").className="";main.className="";document.body.classList.remove("en-serie");
-      var p=rep.filter(function(r){return r.ok}).length/rep.length;
-      retenir(sections[sec],p,rep.filter(function(r){return r.ok}).length,rep.length);
-      var nouveauxTitres=verifierTitres();
+      var bonnes=rep.filter(function(r){return r.ok}).length,p=bonnes/rep.length,messageTest=null;
+      var nouveauxTitres;
+      if(cour.permis){                               // test d'un titre : pas de progression enregistrée, seulement le titre
+        var t=cour.permis,deja=!!etatTitre(t).date;
+        nouveauxTitres=[];
+        if(bonnes>=(t.test.reussite||Math.ceil(.9*rep.length))){
+          if(!deja){donnerTitre(t);nouveauxTitres=[t].concat(verifierTitres())}   // + un titre ultime qu'il complète
+          else messageTest='<p class="msg-test reussi">Encore réussi : ton '+esc(t.nom)+' est bien mérité !</p>';
+        }
+        else messageTest='<p class="msg-test">'+(t.test.echec||"Pas encore cette fois. Continue à t’exercer : tu feras mieux la prochaine fois !")+'</p>';
+      }else{
+        retenir(cour,p,bonnes,rep.length);
+        nouveauxTitres=verifierTitres();
+        // titre « séries d'affilée » sur cette partie, pas encore obtenu : où en est le compteur
+        titres.forEach(function(t){
+          if(!t.serie||t.serie.partie!==cour.nom||nouveauxTitres.indexOf(t)>=0||etatTitre(t).date)return;
+          var c=etatTitre(t).compte;
+          messageTest='<p class="msg-test'+(c?' reussi':'')+'">'+esc(t.nom)+' : <b>'+c+' / '+t.serie.fois+'</b>'+
+            (c?" — encore "+(t.serie.fois-c)+" test"+(t.serie.fois-c>1?"s":"")+" réussi"+(t.serie.fois-c>1?"s":"")+" d’affilée !":" — le compteur repart de zéro. Continue à t’exercer, tu feras mieux la prochaine fois !")+'</p>';
+        });
+      }
       $("resultat").style.background=couleur(p);$("resultat").style.color=encre(p);
       $("niveau").textContent=niveau(p);
       $("curseur").style.left=(100*p)+"%";
       // Au test : niveau de chaque partie du chapitre, pour savoir quoi retravailler
-      var bil=$("bilan");bil.innerHTML="";
-      if(sections[sec].test){
+      var bil=$("bilan");bil.innerHTML=messageTest||"";
+      if(cour.test){
         var par={};
         rep.forEach(function(r){var s=r.q.section;par[s]=par[s]||{ok:0,n:0};par[s].n++;if(r.ok)par[s].ok++});
         var ul=document.createElement("ul");ul.className="bilan";
@@ -640,9 +783,9 @@
       }
       // Titre tout juste obtenu : la médaille tombe sur l'écran avec son tampon, et il reste annoncé en haut du bilan
       nouveauxTitres.forEach(function(t){
-        bil.insertAdjacentHTML("afterbegin",'<div class="titre-gagne"><span>Nouveau titre !</span>'+carteTitre(t)+'</div>');
+        bil.insertAdjacentHTML("afterbegin",'<div class="titre-gagne"><span>Nouveau titre !</span>'+carteTitre(t,true)+'</div>');
       });
-      if(nouveauxTitres.length){celebrer(nouveauxTitres[0]);majTitres()}
+      if(nouveauxTitres.length){celebrer(nouveauxTitres);majTitres()}
       var ul2=$("list");ul2.innerHTML="";
       rep.forEach(function(r){
         var li=document.createElement("li");li.className=r.ok?"ok":"ko";
@@ -665,7 +808,7 @@
     if(sections.length===1)$("autre").className="tuile hide";   // pas d'autre partie à choisir
     function accueil(){clearTimeout(attente);attente=null;majEtats();main.className="";document.body.classList.remove("en-serie");$("versParties").className="hide vers-parties";$("carte").className="card hide";$("fin").className="hide";$("accueil").className="";window.scrollTo(0,0)}
     $("versParties").addEventListener("click",function(e){e.preventDefault();e.stopPropagation();accueil()});
-    $("encore").addEventListener("click",function(){nouvelleSerie(sec)});
+    $("encore").addEventListener("click",function(){lancer(cour)});
     $("autre").addEventListener("click",accueil);
     $("stop").addEventListener("click",function(e){e.stopPropagation();accueil()});
     if(sections.length===1)nouvelleSerie(0);       // chapitre sans parties : la série démarre directement

@@ -8,27 +8,129 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Addition et soustraction
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : ADDITION ET SOUSTRACTION (entiers et décimaux)
+  Parties « de tête » : QCM. Parties « à poser » : l'élève POSE l'opération sur le site (../commun/poser.js) :
+  l'opération est déjà disposée, il remplit les cases (retenues et lignes intermédiaires en brouillon),
+  seul le résultat est corrigé.
+  Les tests (20 questions) ne prennent que quelques opérations à poser, pour rester assez courts.
+  Permis : 2 tests réussis d'affilée à 17 / 20 ou plus. « Maître du calcul » = les 4 permis des deux chapitres
+  de calcul (Addition et soustraction, Multiplication et division).
+  Les décimaux sont fabriqués en entiers (centièmes, millièmes) puis divisés : pas d'erreur d'arrondi.
+  Mode d'emploi général d'un type de questions : voir ../6qf-fractions/index.html.
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/nombres.js"></script>
+<script src="../commun/poser.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Addition et soustraction",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var O=FLASH.outils, N=NOMBRES, nb=O.nb, A=N.arrondi;
+  var POSE="Pose et calcule : ";
+
+  // ---------- Outils ----------
+  // décimal au hasard entre min et max, avec d chiffres après la virgule (le dernier non nul)
+  function dec(h,min,max,d){
+    var p=Math.pow(10,d),n;
+    do{n=h.rnd(min*p,max*p)}while(n%10===0);
+    return n/p;
+  }
+  function nbDec(x){var s=String(A(x)).split(".");return s[1]?s[1].length:0}
+  // addition chiffre par chiffre sans retenue (erreur typique) ; soustraction « le plus petit chiffre ôté du plus grand »
+  function sansRetenue(a,b,plus){
+    var s1=String(a),s2=String(b),L=Math.max(s1.length,s2.length),r="";
+    s1=s1.padStart(L,"0");s2=s2.padStart(L,"0");
+    for(var i=0;i<L;i++){var x=Number(s1[i]),y=Number(s2[i]);r+=plus?(x+y)%10:Math.abs(x-y)}
+    return Number(r);
+  }
+  // le même calcul en entiers « sans virgule » (centièmes…) : pour les erreurs sur les décimaux
+  function enEntiers(a,b){var d=Math.max(nbDec(a),nbDec(b)),p=Math.pow(10,d);return {a:Math.round(a*p),b:Math.round(b*p),p:p}}
+  // virgules mal alignées : les derniers chiffres sont mis l'un sous l'autre
+  function malAligne(a,b,plus){
+    var da=nbDec(a),db=nbDec(b),d=Math.max(da,db),ia=Math.round(a*Math.pow(10,da)),ib=Math.round(b*Math.pow(10,db));
+    return (plus?ia+ib:ia-ib)/Math.pow(10,d);
+  }
+  // un chiffre 0 enlevé (zéro oublié au quotient : 206 → 26)
+  function sansZero(x){var s=String(A(x)),i=s.search(/[1-9.]0/);return i<0?null:Number(s.slice(0,i+1)+s.slice(i+2))}
+  function qr(q,r){return "q = "+nb(q)+" ; r = "+nb(r)}
+
+  // ======================================================================
+  // ADDITION ET SOUSTRACTION
+  var ADD_TETE={ nom:"Additionner de tête", gen:function(h){
+    switch(h.rnd(1,3)){
+      case 1: var a=h.rnd(12,89),b=h.rnd(12,89);
+        return {q:a+" + "+b+" = ?",r:a+b,pieges:[a+b-10,a+b+10,sansRetenue(a,b,true)],correction:a+" + "+b+" = "+a+" + "+(b-b%10)+" + "+(b%10)+" = "+(a+b)+"."};
+      case 2: var c=h.choix([100,1000]),x=c===100?h.rnd(11,89):h.rnd(101,899);
+        return {q:x+" + … = "+nb(c),r:c-x,pieges:[c-x+10,c-x-10,c-x+1],correction:"Complément à "+nb(c)+" : "+x+" + "+(c-x)+" = "+nb(c)+"."};
+      default: var y=h.rnd(120,880),z=h.rnd(11,99);
+        return {q:y+" + "+z+" = ?",r:y+z,pieges:[y+z-10,y+z+10,y+z+100,sansRetenue(y,z,true)],correction:y+" + "+z+" = "+(y+z)+"."};
+    }
+  }};
+  var SOUS_TETE={ nom:"Soustraire de tête", gen:function(h){
+    switch(h.rnd(1,3)){
+      case 1: var a=h.rnd(31,99),b=h.rnd(12,a-5);
+        return {q:a+" − "+b+" = ?",r:a-b,pieges:[a-b+10,a-b-10,sansRetenue(a,b,false)],correction:a+" − "+b+" = "+a+" − "+(b-b%10)+" − "+(b%10)+" = "+(a-b)+"."};
+      case 2: var c=h.choix([100,1000]),x=c===100?h.rnd(11,89):h.rnd(101,899);
+        return {q:nb(c)+" − "+x+" = ?",r:c-x,pieges:[c-x+10,c-x-10,c-x+1,sansRetenue(c,x,false)],correction:"C’est le complément de "+x+" à "+nb(c)+" : "+x+" + "+(c-x)+" = "+nb(c)+"."};
+      default: var y=h.rnd(210,990),z=h.rnd(11,99);
+        return {q:y+" − "+z+" = ?",r:y-z,pieges:[y-z+10,y-z-10,y-z-100,sansRetenue(y,z,false)],correction:y+" − "+z+" = "+(y-z)+"."};
+    }
+  }};
+  var DEC_TETE={ nom:"Décimaux de tête", gen:function(h){
+    switch(h.rnd(1,4)){
+      case 1: var a=dec(h,1,9,1),b=dec(h,1,9,1),ia=Math.round(a*10),ib=Math.round(b*10);
+        return {q:nb(a)+" + "+nb(b)+" = ?",r:A(a+b),pieges:[A(a+b-1),A(a+b+1),A(Math.floor(ia/10)+Math.floor(ib/10)+((ia+ib)%10)/10)],
+                correction:"Unités : "+(Math.floor(ia/10)+Math.floor(ib/10))+" ; dixièmes : "+(ia%10)+" + "+(ib%10)+" = "+(ia%10+ib%10)+". Donc "+nb(A(a+b))+"."};
+      case 2: var c=dec(h,3,9,1),d;do{d=dec(h,1,c-.5,1)}while(d>=c);
+        return {q:nb(c)+" − "+nb(d)+" = ?",r:A(c-d),pieges:[A(c-d+1),A(c-d-1),A(c-d+.2)],correction:nb(c)+" − "+nb(d)+" = "+nb(A(c-d))+"."};
+      case 3: var x=h.choix([dec(h,0,1,1),dec(h,0,1,2)]),cible=1;
+        return {q:nb(x)+" + … = 1",r:A(1-x),pieges:[A(1.1-x),A(.9-x),A(10-x)/10],correction:"Complément à 1 : "+nb(x)+" + "+nb(A(1-x))+" = 1."};
+      default: var y=dec(h,1,9,1);
+        return {q:nb(y)+" + … = 10",r:A(10-y),pieges:[A(11-y),A(9-y),A(10-y+.2)],correction:"Complément à 10 : "+nb(y)+" + "+nb(A(10-y))+" = 10."};
+    }
+  }};
+  var POSE_ADD_ENT={ nom:"Poser une addition ou une soustraction (entiers)", gen:function(h){
+    var a=h.rnd(1200,98000),b=h.rnd(350,a-100),plus=h.choix([true,false]),r=plus?a+b:a-b;
+    return {q:POSE+nb(a)+(plus?" + ":" − ")+nb(b),r:nb(r),widget:plus?POSER.addition(a,b):POSER.soustraction(a,b),
+            correction:"On aligne les unités, et on n’oublie pas les retenues : "+nb(a)+(plus?" + ":" − ")+nb(b)+" = "+nb(r)+"."};
+  }};
+  var POSE_ADD_DEC={ nom:"Poser une addition ou une soustraction (décimaux)", gen:function(h){
+    var a=dec(h,20,400,h.rnd(1,2)),b,plus=h.choix([true,false]);
+    do{b=dec(h,3,plus?300:a-1,h.rnd(1,3))}while(nbDec(a)===nbDec(b)||(!plus&&b>=a));
+    var r=A(plus?a+b:a-b),e=enEntiers(a,b);
+    return {q:POSE+nb(a)+(plus?" + ":" − ")+nb(b),r:nb(r),widget:plus?POSER.addition(a,b):POSER.soustraction(a,b),
+            correction:"On aligne les virgules (on peut compléter avec des zéros) : "+nb(a)+(plus?" + ":" − ")+nb(b)+" = "+nb(r)+"."};
+  }};
+
+  // Titre ultime commun aux deux chapitres de calcul (le même titre, affiché dans les deux)
+  var MAITRE={ nom:"Maître du calcul", chapitre:"Calcul 6e", medaille:["MAÎTRE DU","CALCUL","+×÷"],
+    requiert:[{chapitre:"Addition et soustraction",nom:"Permis addition"},{chapitre:"Multiplication et division",nom:"Permis multiplication"},
+              {chapitre:"Multiplication et division",nom:"Permis division euclidienne"},{chapitre:"Multiplication et division",nom:"Permis division décimale"}],
+    condition:"Obtiens les 4 permis de calcul :", bravo:"Tu maîtrises les 4 opérations !", tampon:"Validé" };
+  function permis(nom,haut,centre,groupe,partie){
+    return { nom:nom, groupe:groupe, medaille:[haut,"CALCUL",centre],
+             serie:{partie:partie,fois:2,minimum:17},
+             condition:"Réussis le test (20 questions) 2 fois d’affilée :", bravo:"Bravo, permis obtenu !", tampon:"Validé" };
+  }
+
+  FLASH.chapitre({
+    titre: "Addition et soustraction",
+    image: '<span class="ill-dec">+ −</span>',
+    nbQuestions: 10,
+    testAuto: false,                                 // le test du chapitre est écrit à la main (peu d'opérations à poser)
+    titres: [ permis("Permis addition","ADDITION","+ −",null,"Test : addition et soustraction"), MAITRE ],
+    sections: [
+      { groupe:"De tête", nom:"Addition de tête", image:'<span class="ill-dec">37 + 45</span>', types:[ADD_TETE] },
+      { groupe:"De tête", nom:"Soustraction de tête", image:'<span class="ill-dec">100 − 37</span>', types:[SOUS_TETE] },
+      { groupe:"De tête", nom:"Décimaux de tête", image:'<span class="ill-dec">2,5 + 1,7</span>', types:[DEC_TETE] },
+      { groupe:"À poser", nom:"À poser : entiers", affiche:"Entiers (+ et −)", image:'<span class="ill-dec">✎ 4 587</span>', nb:5, types:[POSE_ADD_ENT] },
+      { groupe:"À poser", nom:"À poser : décimaux", affiche:"Décimaux (+ et −)", image:'<span class="ill-dec">✎ 45,7</span>', nb:5, types:[POSE_ADD_DEC] },
+      // 20 questions : 16 de tête et 4 à poser
+      { groupe:"Test", nom:"Test : addition et soustraction", commeTest:true, nb:20, image:'<span class="ill-dec">+ −</span>',
+        types:[ADD_TETE,ADD_TETE,ADD_TETE,SOUS_TETE,SOUS_TETE,SOUS_TETE,DEC_TETE,DEC_TETE,POSE_ADD_ENT,POSE_ADD_DEC] }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

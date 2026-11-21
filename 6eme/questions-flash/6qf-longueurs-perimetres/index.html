@@ -8,27 +8,135 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Longueurs et périmètres
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : LONGUEURS ET PÉRIMÈTRES
+  Parties : conversions de tête, tableau de conversion à remplir (../commun/conversion.js),
+  mesurer et tracer à la règle (../commun/geo.js), périmètre : quel calcul ? combien ?, longueur d'un cercle.
+  Titre : « Permis longueurs » (2 tests d'affilée à 17 / 20 ou plus).
+  Mode d'emploi : voir ../6qf-fractions/index.html.
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/nombres.js"></script>
+<script src="../commun/figures.js"></script>
+<script src="../commun/conversion.js"></script>
+<script src="../commun/geo.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Longueurs et périmètres",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var O=FLASH.outils, N=NOMBRES, nb=O.nb, A=N.arrondi, U=["km","hm","dam","m","dm","cm","mm"];
+  function texte(n){return n.e+(n.d?","+n.d:"")}
+
+  // ---------- Conversions ----------
+  function conversion(h){
+    var i,j,n,v;
+    do{i=h.rnd(0,6);j=h.rnd(Math.max(0,i-3),Math.min(6,i+3));n=N.nombre(h,h.rnd(1,3),h.rnd(0,2));v=CONVERSION.convertir(texte(n),j-i)}
+    while(i===j||v>=100000||v<.001);
+    return {de:U[i],vers:U[j],txt:texte(n),v:v,i:i,j:j};
+  }
+  var CONV_TETE={ nom:"Convertir de tête", gen:function(h){
+    var c=conversion(h),moins=CONVERSION.convertir(c.txt,c.j-c.i-1),plus=CONVERSION.convertir(c.txt,c.j-c.i+1);
+    return {q:c.txt+" "+c.de+" = … "+c.vers,r:c.v,pieges:[moins,plus,CONVERSION.convertir(c.txt,c.i-c.j)],
+            correction:"De "+c.de+" à "+c.vers+", on "+(c.j>c.i?"avance":"recule")+" de "+Math.abs(c.j-c.i)+" colonne"+(Math.abs(c.j-c.i)>1?"s":"")+" dans le tableau : "+c.txt+" "+c.de+" = "+nb(c.v)+" "+c.vers+"."};
+  }};
+  var CONV_TABLEAU={ nom:"Tableau de conversion", gen:function(h){
+    var c=conversion(h);
+    return {q:"Convertis : "+O.nw(c.txt+" "+c.de+" = … "+c.vers),r:nb(c.v)+" "+c.vers,widget:CONVERSION.widget("longueur",c.txt,c.de,c.vers),
+            correction:c.txt+" "+c.de+" = "+nb(c.v)+" "+c.vers+"."};
+  }};
+
+  // ---------- Mesurer et tracer à la règle ----------
+  function placerSegment(h,L){                        // un segment de longueur L qui tient dans la figure (10 × 7,5)
+    var a,p,q;do{a=h.rnd(-35,35)*Math.PI/180;p=[h.rnd(10,40)/10,h.rnd(15,60)/10];q=[p[0]+L*Math.cos(a),p[1]-L*Math.sin(a)]}
+    while(q[0]<.5||q[0]>9.5||q[1]<.6||q[1]>7);
+    return [p,q];
+  }
+  var MESURER={ nom:"Mesurer un segment", gen:function(h){
+    var L=h.rnd(25,85)/10,s=placerSegment(h,L),bonne=nb(L)+" cm";
+    var choix=[L,A(L+.5),A(L-.5),A(L+1),A(L-1),A(L+.2)].map(function(x){return nb(x)+" cm"});
+    choix=choix.filter(function(x,i){return choix.indexOf(x)===i}).sort(function(a,b){return parseFloat(a.replace(",","."))-parseFloat(b.replace(",","."))});
+    return {q:"Mesure le segment [AB] avec la règle.",r:bonne,
+            widget:GEO.tache({donnees:{points:{A:s[0],B:s[1]},segments:[["A","B"]]},outils:["regle"],choix:choix,r:bonne,
+              aide:"Prends la règle, place son 0 sur A (elle s’y accroche) et tourne-la vers B."}),
+            correction:"Le 0 de la règle sur A : B est en face de "+nb(L)+". AB = "+nb(L)+" cm."};
+  }};
+  var TRACER={ nom:"Tracer un segment", gen:function(h){
+    var L=h.rnd(20,80)/10,p=[h.rnd(10,30)/10,h.rnd(15,60)/10];
+    return {q:"Trace un segment [AB] de <b>"+nb(L)+" cm</b> à partir du point A.",r:nb(L)+" cm",
+            widget:GEO.tache({donnees:{points:{A:p}},outils:["regle"],
+              aide:"Place le 0 de la règle sur A, puis trace le long du bord gradué jusqu’à "+nb(L)+".",
+              verifier:function(e,G){return G.min(e.traits.map(function(t){
+                var dA=Math.min(G.V.dist(t[0],p),G.V.dist(t[1],p));return Math.max(dA/G.TOL,Math.abs(G.V.dist(t[0],t[1])-L)/.1)}))},
+              corrige:{segments:[[p,[p[0]+L,p[1]]]]}}),
+            correction:"Le 0 de la règle sur A, on trace jusqu’à la graduation "+nb(L)+" (dans n’importe quelle direction)."};
+  }};
+
+  // ---------- Périmètres ----------
+  // figures : rectangle, carré, triangle, pentagone ; côtés écrits en cm
+  function figure(h){
+    var t=h.choix(["rectangle","rectangle","carre","triangle","polygone"]);
+    if(t==="rectangle"){var Lg=h.rnd(4,12),l=h.rnd(2,Lg-1),k=6/Lg,P=[[0,0],[Lg*k,0],[Lg*k,l*k],[0,l*k]];
+      return {t:t,nom:"ce rectangle",cotes:[Lg,l],p:2*(Lg+l),svg:FIG.dessin(6,l*k,[{poly:P},{droit:[P[0],P[1],P[3]]},{droit:[P[2],P[1],P[3]]},
+        {cote:[P[0],P[1]],t:Lg+" cm",centre:[3,l*k/2]},{cote:[P[1],P[2]],t:l+" cm",centre:[3,l*k/2]}],{px:34}),
+        bons:["2 × ("+Lg+" + "+l+")","("+Lg+" + "+l+") × 2",Lg+" + "+l+" + "+Lg+" + "+l,"2 × "+Lg+" + 2 × "+l],
+        faux:[Lg+" × "+l,Lg+" + "+l,"2 × "+Lg+" + "+l,"4 × "+Lg,Lg+" × "+l+" × 2","2 × ("+Lg+" × "+l+")"]}}
+    if(t==="carre"){var c=h.rnd(3,15),Q=[[0,0],[4,0],[4,4],[0,4]];
+      return {t:t,nom:"ce carré",cotes:[c],p:4*c,svg:FIG.dessin(4,4,[{poly:Q},{droit:[Q[0],Q[1],Q[3]]},{egal:[Q[0],Q[1]]},{egal:[Q[1],Q[2]]},{egal:[Q[2],Q[3]]},{egal:[Q[3],Q[0]]},
+        {cote:[Q[0],Q[1]],t:c+" cm",centre:[2,2]}],{px:34}),
+        bons:["4 × "+c,c+" × 4",c+" + "+c+" + "+c+" + "+c],faux:[c+" × "+c,"2 × "+c,c+" + 4",c+" × "+c+" × 4","3 × "+c]}}
+    if(t==="triangle"){var a=h.rnd(3,9),b=h.rnd(3,9),d=h.rnd(Math.abs(a-b)+2,a+b-2),T=[[0,4],[6,4],[h.rnd(15,45)/10,0]];
+      return {t:t,nom:"ce triangle",cotes:[a,b,d],p:a+b+d,svg:FIG.dessin(6,4,[{poly:T},{cote:[T[0],T[1]],t:a+" cm",centre:[3,2.5]},{cote:[T[1],T[2]],t:b+" cm",centre:[3,2.5]},{cote:[T[2],T[0]],t:d+" cm",centre:[3,2.5]}],{px:34}),
+        bons:[a+" + "+b+" + "+d,d+" + "+a+" + "+b],faux:[a+" × "+b+" × "+d,"3 × "+a,a+" × "+b,a+" + "+b,"2 × ("+a+" + "+b+")"]}}
+    var s=[h.rnd(2,7),h.rnd(2,7),h.rnd(2,7),h.rnd(2,7),h.rnd(2,7)],R=[[1,4],[5,4],[6,1.6],[3,0],[0,1.6]];
+    return {t:t,nom:"ce polygone",cotes:s,p:s.reduce(function(x,y){return x+y}),svg:FIG.dessin(6,4,[{poly:R}].concat(R.map(function(p,i){return {cote:[p,R[(i+1)%5]],t:s[i]+" cm",centre:[3,2.2]}})),{px:34}),
+      bons:[s.join(" + ")],faux:["5 × "+s[0],s.slice(0,4).join(" + "),s.join(" × "),"2 × ("+s[0]+" + "+s[1]+")"]};
+  }
+  var PERIM_CALC={ nom:"Périmètre : quel calcul ?", gen:function(h){
+    var F=figure(h),bonne=h.choix(F.bons),choix=FIG.qcm(h,bonne,F.bons,F.faux);
+    return {q:"Quel calcul donne le périmètre de "+F.nom+" ?"+F.svg,large:true,choix:choix,r:bonne,autres:F.bons.filter(function(x){return x!==bonne}),
+            correction:"Le périmètre, c’est le tour de la figure : on additionne les longueurs de tous les côtés. Ici "+bonne+" = "+F.p+" cm."};
+  }};
+  var PERIM_VAL={ nom:"Périmètre : combien ?", gen:function(h){
+    var F=figure(h),c=F.cotes;
+    return {q:"Quel est le périmètre de "+F.nom+" (en cm) ?"+F.svg,r:F.p,pieges:[c.length>1?c[0]*c[1]:c[0]*c[0],c.reduce(function(x,y){return x+y}),F.p+2,2*c[0]+(c[1]||0)],
+            correction:"On fait le tour : "+F.bons[0]+" = "+F.p+" cm."};
+  }};
+  var CERCLE_CALC={ nom:"Longueur d’un cercle : quel calcul ?", gen:function(h){
+    var r=h.rnd(2,9),diam=h.choix([true,false]),d=2*r,C=[2.3,2.3];
+    var svg=FIG.dessin(4.6,4.6,[{cercle:[C,2]},{point:C,nom:"O",pos:"so"},diam?{seg:[[.3,2.3],[4.3,2.3]]}:{seg:[C,[4.3,2.3]]},{texte:diam?[3.3,2.05]:[3.3,2.05],t:(diam?d:r)+" cm"}],{px:34});
+    var bons=["2 × π × "+r,"π × "+d],faux=["π × "+r+" × "+r,"π × "+r,"2 × "+r,"π + "+d,"4 × "+r,"π × "+d+" × "+d];
+    var bonne=diam?bons[1]:bons[0];
+    return {q:"Ce cercle a un "+(diam?"diamètre":"rayon")+" de "+(diam?d:r)+" cm. Quel calcul donne sa longueur (son périmètre) ?"+svg,large:true,
+            choix:FIG.qcm(h,bonne,bons,faux),r:bonne,autres:bons.filter(function(x){return x!==bonne}),
+            correction:"Longueur du cercle = π × diamètre = 2 × π × rayon : "+bonne+"."};
+  }};
+  var CERCLE_ENV={ nom:"Longueur d’un cercle : environ ?", gen:function(h){
+    var r=h.rnd(2,15),v=Math.round(2*Math.PI*r);
+    return {q:"Environ combien mesure un cercle de rayon "+r+" cm ? (π ≈ 3,14 ; arrondi au cm)",r:v,pieges:[Math.round(Math.PI*r*r),Math.round(Math.PI*r),2*r,4*r],
+            correction:"2 × π × "+r+" ≈ 2 × 3,14 × "+r+" ≈ "+v+" cm."};
+  }};
+
+  var TOUS=[CONV_TETE,CONV_TETE,CONV_TETE,CONV_TABLEAU,MESURER,PERIM_CALC,PERIM_CALC,PERIM_VAL,PERIM_VAL,CERCLE_CALC,CERCLE_ENV];
+  FLASH.chapitre({
+    titre: "Longueurs et périmètres",
+    image: '<span class="ill-dec">📏 cm</span>',
+    nbQuestions: 10,
+    testAuto: false,
+    titres: [{ nom:"Permis longueurs", medaille:["PERMIS","LONGUEURS","cm"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu maîtrises longueurs et périmètres.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Convertir", nom:"Conversions de tête", image:'<span class="ill-dec">1 m = 100 cm</span>', types:[CONV_TETE] },
+      { groupe:"Convertir", nom:"Tableau de conversion", image:'<span class="ill-dec">km … mm</span>', nb:6, types:[CONV_TABLEAU] },
+      { groupe:"Mesurer et tracer", nom:"Mesurer à la règle", image:'<span class="ill-dec">📏</span>', nb:6, types:[MESURER] },
+      { groupe:"Mesurer et tracer", nom:"Tracer un segment", image:'<span class="ill-dec">A ——</span>', nb:5, types:[TRACER] },
+      { groupe:"Périmètres", nom:"Périmètre : quel calcul ?", image:'<span class="ill-dec">2 × (L + l)</span>', types:[PERIM_CALC] },
+      { groupe:"Périmètres", nom:"Périmètre : combien ?", image:'<span class="ill-dec">P = ?</span>', types:[PERIM_VAL] },
+      { groupe:"Périmètres", nom:"Longueur d’un cercle", image:'<span class="ill-dec">2 × π × r</span>', types:[CERCLE_CALC,CERCLE_ENV] },
+      // 20 questions : beaucoup de conversions et de périmètres, une mesure, un tableau (pas trop long)
+      { groupe:"Test", nom:"Test : tout le chapitre", commeTest:true, nb:20, image:'<span class="ill-dec">cm</span>', types:TOUS.concat([CONV_TETE,CERCLE_CALC,PERIM_CALC,CONV_TETE,PERIM_VAL,CERCLE_ENV,CONV_TETE,PERIM_CALC,PERIM_VAL]) }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

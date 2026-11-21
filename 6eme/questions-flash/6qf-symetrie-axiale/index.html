@@ -8,27 +8,114 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Symétrie axiale
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : SYMÉTRIE AXIALE
+  Parties : reconnaître deux figures symétriques (quadrillage), symétrique d'un point sur quadrillage,
+  axes de symétrie d'une figure, propriétés (conservation, médiatrice), construire le symétrique d'un point
+  et d'un segment (équerre + règle ou compas) dans l'atelier ../commun/geo.js.
+  Titre : « Permis symétrie » (2 tests d'affilée à 17 / 20 ou plus).
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/figures.js"></script>
+<script src="../commun/geo.js"></script>
+<script src="../commun/tuto.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Symétrie axiale",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var O=FLASH.outils, nb=O.nb, V=GEO.V;
+
+  // ---------- Reconnaître (quadrillage 10 × 6, axe vertical x = 5 ou horizontal y = 3) ----------
+  function symGrille(p,axe){return axe==="v"?[10-p[0],p[1]]:[p[0],6-p[1]]}
+  var FIGURES_SYM={ nom:"Figures symétriques ?", gen:function(h){
+    var axe=h.choix(["v","v","h"]),n=h.rnd(3,5),P=[];
+    while(P.length<n){var p=axe==="v"?[h.rnd(1,4),h.rnd(0,6)]:[h.rnd(0,10),h.rnd(0,2)];if(!P.some(function(q){return q[0]===p[0]&&q[1]===p[1]}))P.push(p)}
+    // polygone simple : points rangés autour de leur centre
+    var g=[P.reduce(function(s,p){return s+p[0]},0)/n,P.reduce(function(s,p){return s+p[1]},0)/n];
+    P.sort(function(a,b){return Math.atan2(a[1]-g[1],a[0]-g[0])-Math.atan2(b[1]-g[1],b[0]-g[0])});
+    var oui=h.choix([true,false]),Q=P.map(function(p){return symGrille(p,axe)}),erreur="";
+    if(!oui){var t=h.rnd(1,3);
+      if(t===1){Q=P.map(function(p){return axe==="v"?[p[0]+5,p[1]]:[p[0],p[1]+3]});erreur="La figure a été glissée (translation), pas retournée."}
+      if(t===2){var i=h.rnd(0,n-1);Q[i]=axe==="v"?[Q[i][0]+1,Q[i][1]]:[Q[i][0],Q[i][1]+1];erreur="Un sommet n’est pas à la bonne distance de l’axe."}
+      if(t===3){Q=Q.map(function(p){return axe==="v"?[p[0]+1,p[1]]:[p[0],p[1]+1]});erreur="La figure n’est pas à la même distance de l’axe."}}
+    var axeEl=axe==="v"?{seg:[[5,-.3],[5,6.3]],cls:"fg-axe"}:{seg:[[-.3,3],[10.3,3]],cls:"fg-axe"};
+    return {q:"Les deux figures sont-elles symétriques par rapport à la droite rose ?"+FIG.dessin(10,6,[{poly:P,plein:1},{poly:Q,plein:1},axeEl],{grille:true,px:26}),
+            choix:["Oui","Non"],r:oui?"Oui":"Non",correction:oui?"En pliant le long de la droite rose, les deux figures se superposent.":erreur};
+  }};
+  var POINT_GRILLE={ nom:"Symétrique d’un point (quadrillage)", gen:function(h){
+    var axe=h.choix(["v","h","diag"]),A,sym,ax;
+    if(axe==="diag"){do{A=[h.rnd(1,5),h.rnd(1,5)]}while(A[0]===A[1]);sym=[A[1],A[0]];ax={seg:[[-.3,-.3],[6.3,6.3]],cls:"fg-axe"}}   // axe : la diagonale y = x
+    else{A=axe==="v"?[h.rnd(1,4),h.rnd(1,5)]:[h.rnd(1,9),h.rnd(1,2)];sym=symGrille(A,axe);ax=axe==="v"?{seg:[[5,-.3],[5,6.3]],cls:"fg-axe"}:{seg:[[-.3,3],[10.3,3]],cls:"fg-axe"}}
+    var W=axe==="diag"?6:10,faux=[[sym[0]+1,sym[1]],[sym[0],sym[1]+1],[sym[0]-1,sym[1]-1],axe==="v"?[A[0]+5,A[1]]:axe==="h"?[A[0],A[1]+3]:[6-A[0],6-A[1]],[sym[0]+1,sym[1]-1],[sym[0]-1,sym[1]+1],axe==="diag"?[A[0],6-A[1]]:[sym[0]+2,sym[1]]];
+    var dans=function(p){return p[0]>=0&&p[0]<=W&&p[1]>=0&&p[1]<=6},cle=function(p){return p.join()},vus={};vus[cle(sym)]=1;vus[cle(A)]=1;
+    var cands=[sym];h.melange(faux).forEach(function(p){if(dans(p)&&!vus[cle(p)]&&cands.length<5){vus[cle(p)]=1;cands.push(p)}});
+    cands=h.melange(cands);var L=["B","C","D","E","F"].slice(0,cands.length),bonne=L[cands.findIndex(function(p){return cle(p)===cle(sym)})];
+    var els=[ax,{point:A,nom:"A",pos:"no"}].concat(cands.map(function(p,i){return {point:p,nom:L[i],pos:"ne"}}));
+    return {q:"Quel point est le symétrique de A par rapport à la droite rose ?"+FIG.dessin(W,6,els,{grille:true,px:30}),choix:L,r:bonne,
+            correction:"Le symétrique est de l’autre côté de l’axe, à la même distance, sur la perpendiculaire à l’axe : c’est "+bonne+"."};
+  }};
+  var AXES=[["un carré",4,[[0,0],[2,0],[2,2],[0,2]]],["un rectangle (pas carré)",2,[[0,0],[3,0],[3,1.6],[0,1.6]]],["un losange (pas carré)",2,[[0,.8],[1.4,0],[2.8,.8],[1.4,1.6]]],
+    ["un triangle équilatéral",3,[[0,1.8],[2.08,1.8],[1.04,0]]],["un triangle isocèle (pas équilatéral)",1,[[0,1.8],[1.6,1.8],[.8,0]]],["un triangle quelconque",0,[[0,1.8],[2.6,1.8],[.6,.2]]],
+    ["un cercle","une infinité",null],["un parallélogramme (pas rectangle, pas losange)",0,[[0,1.6],[2.2,1.6],[2.9,0],[.7,0]]]];
+  var NB_AXES={ nom:"Axes de symétrie", gen:function(h){
+    var a=h.choix(AXES),fig=a[2]?FIG.dessin(3,2,[{poly:a[2],plein:1}],{px:34}):FIG.dessin(2,2,[{disque:[[1,1],.95]}],{px:34});
+    return {q:"Combien d’axes de symétrie a "+a[0]+" ?"+fig,choix:["0","1","2","3","4","une infinité"],r:String(a[1]),
+            correction:a[0].charAt(0).toUpperCase()+a[0].slice(1)+" a "+(a[1]===0?"aucun axe":a[1]==="une infinité"?"une infinité d’axes (tous ses diamètres)":a[1]+" axe"+(a[1]>1?"s":""))+" de symétrie."};
+  }};
+
+  // ---------- Propriétés ----------
+  var PROPS=[["Le symétrique d’un segment est…","un segment de même longueur",["un segment deux fois plus long","un segment plus court","une droite","un point"]],
+    ["La symétrie axiale conserve…","les longueurs, les angles et les aires",["seulement les longueurs","rien du tout","seulement les aires","les longueurs mais pas les angles"]],
+    ["Si A’ est le symétrique de A par rapport à (d), alors (d) est…","la médiatrice de [AA’]",["parallèle à (AA’)","un rayon de [AA’]","égale à [AA’]","la moitié de [AA’]"]],
+    ["La médiatrice d’un segment, c’est…","la droite perpendiculaire au segment en son milieu",["la droite parallèle au segment","n’importe quelle perpendiculaire au segment","le milieu du segment","la droite qui passe par une extrémité"]],
+    ["Si le point A est sur l’axe (d), son symétrique est…","le point A lui-même",["un point de l’autre côté de (d)","il n’en a pas","le milieu de (d)","un point à 1 cm de A"]],
+    ["Le symétrique d’une droite est…","une droite",["un segment","un cercle","un point","une demi-droite"]],
+    ["Le symétrique d’un cercle de rayon 3 cm est…","un cercle de rayon 3 cm",["un cercle de rayon 6 cm","un disque","un segment de 3 cm","un cercle de rayon 1,5 cm"]]];
+  var PROPRIETES={ nom:"Propriétés de la symétrie", gen:function(h){
+    if(h.rnd(0,3)===0){var L=h.rnd(20,95)/10;return {q:"[AB] mesure "+nb(L)+" cm. Combien mesure son symétrique [A’B’] par rapport à une droite (en cm) ?",r:L,pieges:[2*L,L/2,L+1],correction:"La symétrie conserve les longueurs : A’B’ = "+nb(L)+" cm."}}
+    var p=h.choix(PROPS);return {q:p[0],large:true,choix:h.melange([p[1]].concat(p[2])),r:p[1],correction:p[0].replace("…"," ")+p[1]+"."};
+  }};
+
+  // ---------- Construire (atelier) ----------
+  function axe(h){var a=h.rnd(55,125),u=[Math.cos(a*Math.PI/180),-Math.sin(a*Math.PI/180)],C=[5,3.75];return {p:V.sub(C,V.mul(u,3)),q:V.add(C,V.mul(u,3)),u:u,n:[-u[1],u[0]]}}
+  function pointCote(h,d,dist,dec){return V.add(V.add([5,3.75],V.mul(d.u,dec)),V.mul(d.n,dist))}
+  var SYM_POINT={ nom:"Construire le symétrique d’un point", gen:function(h){
+    var d=axe(h),A=pointCote(h,d,h.choix([-1,1])*h.rnd(15,30)/10,h.rnd(-20,20)/10),S=V.symetrique(A,d.p,d.q);
+    return {q:"Construis le point A’, symétrique de A par rapport à la droite (d).",r:"A’ placé",
+            widget:GEO.tache({compas:{mode:"arcs",vers:[S]},tuto:"symetrique",donnees:{points:{A:A},droites:[{nom:"(d)",p:d.p,q:d.q}]},outils:["regle","equerre","compas","point"],placer:["A’"],
+              aide:"Trace la perpendiculaire à (d) passant par A (équerre). Reporte de l’autre côté de (d) la même distance (règle ou compas), puis place A’.",
+              verifier:function(e,G){return G.point(e,S,"A’")},corrige:{points:{"A’":S},segments:[[A,S]]}}),
+            correction:"A’ est sur la perpendiculaire à (d) passant par A, de l’autre côté, à la même distance de (d)."};
+  }};
+  var SYM_SEG={ nom:"Construire le symétrique d’un segment", gen:function(h){
+    var d=axe(h),c=h.choix([-1,1]),A=pointCote(h,d,c*h.rnd(12,22)/10,h.rnd(-25,-10)/10),B=pointCote(h,d,c*h.rnd(15,30)/10,h.rnd(5,25)/10);
+    var A2=V.symetrique(A,d.p,d.q),B2=V.symetrique(B,d.p,d.q);
+    return {q:"Construis le symétrique du segment [AB] par rapport à (d) : place A’ et B’.",r:"[A’B’] construit",
+            widget:GEO.tache({compas:{mode:"arcs",vers:[A2,B2]},tuto:"symetrique",donnees:{points:{A:A,B:B},segments:[["A","B"]],droites:[{nom:"(d)",p:d.p,q:d.q}]},outils:["regle","equerre","compas","point"],placer:["A’","B’"],
+              aide:"Construis le symétrique de chaque extrémité (perpendiculaire + même distance), puis relie A’ et B’.",
+              verifier:function(e,G){return Math.max(G.point(e,A2,"A’"),G.point(e,B2,"B’"))},corrige:{points:{"A’":A2,"B’":B2},segments:[[A2,B2]]}}),
+            correction:"Le symétrique d’un segment est le segment qui relie les symétriques de ses extrémités : [A’B’], de même longueur."};
+  }};
+
+  FLASH.chapitre({
+    titre: "Symétrie axiale",
+    image: FIG.dessin(3,2,[{poly:[[.2,.3],[1.2,.3],[.6,1.7]],plein:1},{poly:[[2.8,.3],[1.8,.3],[2.4,1.7]],plein:1},{seg:[[1.5,0],[1.5,2]],cls:"fg-axe"}],{px:20}),
+    nbQuestions: 10,
+    testAuto: false,
+    titres: [{ nom:"Permis symétrie", medaille:["PERMIS","SYMÉTRIE","⇋"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu maîtrises la symétrie axiale.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Reconnaître", nom:"Figures symétriques ?", image:'<span class="ill-dec">◣|◢</span>', types:[FIGURES_SYM] },
+      { groupe:"Reconnaître", nom:"Symétrique d’un point", affiche:"Symétrique d’un point (quadrillage)", image:'<span class="ill-dec">A | A’</span>', types:[POINT_GRILLE] },
+      { groupe:"Reconnaître", nom:"Axes de symétrie", image:'<span class="ill-dec">▢ : 4 axes</span>', types:[NB_AXES] },
+      { groupe:"Propriétés", nom:"Propriétés", affiche:"Propriétés de la symétrie", image:'<span class="ill-dec">médiatrice</span>', types:[PROPRIETES] },
+      { groupe:"Construire", nom:"Symétrique d’un point (construction)", tutos:["symetrique"], affiche:"Symétrique d’un point", image:'<span class="ill-dec">📐 A’</span>', nb:5, types:[SYM_POINT] },
+      { groupe:"Construire", nom:"Symétrique d’un segment", tutos:["symetrique"], image:'<span class="ill-dec">📐 [A’B’]</span>', nb:5, types:[SYM_SEG] },
+      { groupe:"Test", nom:"Test : tout le chapitre", commeTest:true, nb:20, image:'<span class="ill-dec">⇋</span>',
+        types:[FIGURES_SYM,FIGURES_SYM,FIGURES_SYM,FIGURES_SYM,POINT_GRILLE,POINT_GRILLE,POINT_GRILLE,POINT_GRILLE,NB_AXES,NB_AXES,NB_AXES,PROPRIETES,PROPRIETES,PROPRIETES,PROPRIETES,FIGURES_SYM,POINT_GRILLE,NB_AXES,SYM_POINT,SYM_SEG] }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

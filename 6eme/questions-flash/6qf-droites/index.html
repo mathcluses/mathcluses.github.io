@@ -8,27 +8,128 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Droites, parallèles, perpendiculaires
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : DROITES, PARALLÈLES, PERPENDICULAIRES
+  Parties : notations (droite, segment, demi-droite, ∈), parallèles / perpendiculaires / sécantes,
+  trouver l'angle droit, les 3 propriétés de 6e, tracer une perpendiculaire et une parallèle
+  (atelier de géométrie ../commun/geo.js : règle et équerre à placer soi-même).
+  Titre : « Permis droites » (2 tests d'affilée à 17 / 20 ou plus).
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/figures.js"></script>
+<script src="../commun/geo.js"></script>
+<script src="../commun/tuto.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Droites, parallèles, perpendiculaires",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var V=GEO.V;
+  function dir(deg){var t=deg*Math.PI/180;return [Math.cos(t),-Math.sin(t)]}
+
+  // ---------- Notations ----------
+  // A, B, C alignés sur une droite ; on dessine un segment, une droite ou une demi-droite
+  var NOTATION={ nom:"Droite, segment, demi-droite", gen:function(h){
+    var u=dir(h.rnd(-25,25)),A=[1.5,2.2+u[1]*-1.5],B=V.add(A,V.mul(u,3.2)),obj=h.choix(["seg","droite","demiAB","demiBA"]),els=[];
+    var loin=function(p,v){return V.add(p,V.mul(v,6))};
+    if(obj==="seg")els.push({seg:[A,B]});
+    if(obj==="droite")els.push({droite:[A,B]});
+    if(obj==="demiAB")els.push({seg:[A,loin(A,u)]});
+    if(obj==="demiBA")els.push({seg:[B,loin(B,V.mul(u,-1))]});
+    els.push({point:A,nom:"A",pos:"n"},{point:B,nom:"B",pos:"n"});
+    var r={seg:"[AB]",droite:"(AB)",demiAB:"[AB)",demiBA:"[BA)"}[obj];
+    return {q:"Comment se note ce qui est tracé en blanc ?"+FIG.dessin(6.4,4.4,els,{px:34}),choix:["[AB]","(AB)","[AB)","[BA)"],r:r,
+            correction:"[AB] : segment (s’arrête en A et en B) ; (AB) : droite (sans fin des deux côtés) ; [AB) : demi-droite qui part de A et passe par B."};
+  }};
+  var APPARTIENT={ nom:"Appartient ou pas ? (∈, ∉)", gen:function(h){
+    var x=h.melange([0,1.6,3.6]),P={A:x[0],B:x[1],C:x[2]},noms=["A","B","C"],u=dir(h.rnd(-20,20)),O0=[1.2,2.2];
+    var pt=function(n){return V.add(O0,V.mul(u,P[n]+.3))},enonces=[];
+    noms.forEach(function(X){noms.forEach(function(Y){noms.forEach(function(Z){if(X===Y||X===Z||Y>=Z&&Y!==Z)return;if(Y===Z)return;
+      var entre=(P[X]-P[Y])*(P[X]-P[Z])<=0,demi=(P[X]-P[Y])*(P[Z]-P[Y])>=0;
+      enonces.push([X+" ∈ ["+Y+Z+"]",entre],[X+" ∉ ["+Y+Z+"]",!entre],[X+" ∈ ("+Y+Z+")",true],[X+" ∉ ("+Y+Z+")",false],[X+" ∈ ["+Y+Z+")",demi],[X+" ∈ ["+Z+Y+")",(P[X]-P[Z])*(P[Y]-P[Z])>=0])})})});
+    var vrais=enonces.filter(function(e){return e[1]&&e[0].indexOf("(")<0}),faux=enonces.filter(function(e){return !e[1]});
+    var bonne=h.choix(vrais)[0],choix=h.melange([bonne].concat(h.melange(faux).slice(0,5).map(function(e){return e[0]})));
+    var els=[{droite:[pt("A"),pt("B")]}].concat(noms.map(function(n){return {point:pt(n),nom:n,pos:"n"}}));
+    return {q:"Les points A, B et C sont alignés. Quelle écriture est juste ?"+FIG.dessin(6.4,3.6,els,{px:34}),choix:choix,r:bonne,
+            correction:"∈ veut dire « appartient à ». "+bonne+" : regarde où est le point sur la figure."};
+  }};
+
+  // ---------- Positions de deux droites ----------
+  var POSITION={ nom:"Parallèles, perpendiculaires ou sécantes ?", gen:function(h){
+    var t=h.choix(["par","perp","sec"]),a=h.rnd(-40,40),b=t==="par"?a:t==="perp"?a+90:a+h.choix([-1,1])*h.rnd(25,60),C=[3,2.2];
+    var p1=V.add(C,V.mul(dir(a+90),t==="par"?.9:0)),p2=V.sub(C,V.mul(dir(a+90),t==="par"?.9:0)),u=dir(a),v=dir(b);
+    var els=[{droite:[p1,V.add(p1,u)],nom:"(d₁)",posNom:V.add(p1,V.mul(u,2.4))},{droite:[p2,V.add(p2,v)],nom:"(d₂)",cls:"fg-bleu",posNom:V.add(p2,V.mul(v,-2.6))}];
+    if(t==="perp"&&h.choix([true,false]))els.push({droit:[C,V.add(C,u),V.add(C,v)]});
+    return {q:"Les droites (d₁) et (d₂) sont…"+FIG.dessin(6,4.4,els,{px:34}),choix:["parallèles","perpendiculaires","sécantes (pas perpendiculaires)"],
+            r:{par:"parallèles",perp:"perpendiculaires",sec:"sécantes (pas perpendiculaires)"}[t],
+            correction:{par:"Elles ne se coupent jamais : elles sont parallèles.",perp:"Elles se coupent en formant un angle droit : elles sont perpendiculaires.",
+                        sec:"Elles se coupent, mais pas en formant un angle droit (vérifie à l’équerre)."}[t]};
+  }};
+  var ANGLE_DROIT={ nom:"Trouver les droites perpendiculaires", gen:function(h){
+    // 4 droites : une seule paire perpendiculaire, les autres angles loin de 90° (et pas de parallèles)
+    var a,angles,ok;
+    do{a=h.rnd(0,179);angles=[a,a+90];while(angles.length<4)angles.push(h.rnd(0,179));
+      ok=true;for(var i=0;i<4;i++)for(var j=i+1;j<4;j++){if(i===0&&j===1)continue;var d=Math.abs(angles[i]-angles[j])%180;d=Math.min(d,180-d);if(d<15||Math.abs(d-90)<18)ok=false}}while(!ok);
+    var ordre=h.melange([0,1,2,3]),noms=["(d₁)","(d₂)","(d₃)","(d₄)"],C=[3,2.3],els=[];
+    ordre.forEach(function(k,i){var p=V.add(C,V.mul(dir(angles[k]+90),(i-1.5)*.55)),u=dir(angles[k]);els.push({droite:[p,V.add(p,u)],nom:noms[i],posNom:V.add(p,V.mul(u,i%2?2.5:-2.5)),cls:i%2?"fg-bleu":""})});
+    var paires=[],bonne;
+    for(var i2=0;i2<4;i2++)for(var j2=i2+1;j2<4;j2++){var t=noms[i2]+" et "+noms[j2];paires.push(t);if([ordre[i2],ordre[j2]].sort().join()==="0,1")bonne=t}
+    return {q:"Quelles droites sont perpendiculaires ? (Utilise ton équerre ou l’angle droit d’une feuille.)"+FIG.dessin(6,4.6,els,{px:34}),large:true,choix:paires,r:bonne,
+            correction:bonne+" se coupent en formant un angle droit."};
+  }};
+
+  // ---------- Les 3 propriétés ----------
+  var PROPRIETES={ nom:"Les trois propriétés", gen:function(h){
+    var n=h.melange(["(d₁)","(d₂)","(d₃)"]),cas=h.rnd(1,3),hyp,concl,nomProp;
+    if(cas===1){hyp=n[0]+" ⊥ "+n[2]+" et "+n[1]+" ⊥ "+n[2];concl=n[0]+" // "+n[1];nomProp="Deux droites perpendiculaires à une même droite sont parallèles."}
+    if(cas===2){hyp=n[0]+" // "+n[1]+" et "+n[2]+" ⊥ "+n[0];concl=n[2]+" ⊥ "+n[1];nomProp="Si deux droites sont parallèles, toute perpendiculaire à l’une est perpendiculaire à l’autre."}
+    if(cas===3){hyp=n[0]+" // "+n[2]+" et "+n[1]+" // "+n[2];concl=n[0]+" // "+n[1];nomProp="Deux droites parallèles à une même droite sont parallèles."}
+    var autres=[];[[0,1],[0,2],[1,2],[2,0],[2,1],[1,0]].forEach(function(p){["//","⊥"].forEach(function(s){autres.push(n[p[0]]+" "+s+" "+n[p[1]])})});
+    var opp=function(x){return x.replace(/ (\/\/|⊥) /,function(m,s){return s==="//"?" ⊥ ":" // "})};
+    var inv=function(x){return x.split(" ").reverse().join(" ")};   // (d₁) // (d₂) ↔ (d₂) // (d₁) : même phrase
+    var faux=autres.filter(function(x){return x!==concl&&x!==inv(concl)&&hyp.indexOf(x)<0&&hyp.indexOf(inv(x))<0});
+    var choix=h.melange([concl,opp(concl)].concat(h.melange(faux.filter(function(x){return x!==opp(concl)})).slice(0,3)).concat(["on ne peut rien dire"]));
+    return {q:"On sait que "+hyp+". Que peut-on en déduire ?",large:true,choix:choix,r:concl,correction:"Propriété : "+nomProp+" Donc "+concl+"."};
+  }};
+
+  // ---------- Tracer (atelier) ----------
+  function droiteAuHasard(h){var a=h.rnd(-35,35),u=dir(a),C=[5,h.rnd(40,55)/10];return {p:V.sub(C,V.mul(u,3)),q:V.add(C,V.mul(u,3)),u:u}}
+  var PERP={ nom:"Tracer une perpendiculaire", gen:function(h){
+    var d=droiteAuHasard(h),n=[-d.u[1],d.u[0]],sur=h.rnd(0,3)===0,t=h.rnd(-15,15)/10;
+    var A=V.add(V.add([5,(d.p[1]+d.q[1])/2],V.mul(d.u,t)),V.mul(n,sur?0:-h.rnd(18,30)/10));
+    if(sur)A=V.projete(A,d.p,d.q);
+    return {q:"Trace la droite perpendiculaire à (d) passant par A.",r:"perpendiculaire tracée",
+            widget:GEO.tache({tuto:"perpendiculaire",donnees:{points:{A:A},droites:[{nom:"(d)",p:d.p,q:d.q}]},outils:["regle","equerre"],
+              aide:"Prends l’équerre : pose un côté de l’angle droit sur (d), fais-la glisser jusqu’à A, puis trace le long de l’autre côté.",
+              verifier:function(e,G){return G.droite(e,A,n)},corrige:{droites:[[A,V.add(A,n)]]}}),
+            correction:"L’angle droit de l’équerre sur (d), un côté le long de (d), l’autre passant par A."};
+  }};
+  var PARA={ nom:"Tracer une parallèle", gen:function(h){
+    var d=droiteAuHasard(h),n=[-d.u[1],d.u[0]],A=V.add([h.rnd(30,70)/10,(d.p[1]+d.q[1])/2],V.mul(n,-h.rnd(18,30)/10));
+    return {q:"Trace la droite parallèle à (d) passant par A.",r:"parallèle tracée",
+            widget:GEO.tache({tuto:"parallele",donnees:{points:{A:A},droites:[{nom:"(d)",p:d.p,q:d.q}]},outils:["regle","equerre"],
+              aide:"Méthode : trace d’abord la perpendiculaire à (d) passant par A, puis la perpendiculaire à cette droite passant par A.",
+              verifier:function(e,G){return G.droite(e,A,d.u)},corrige:{droites:[[A,V.add(A,d.u)]]}}),
+            correction:"Deux droites perpendiculaires à une même droite sont parallèles : on trace deux perpendiculaires successives."};
+  }};
+
+  FLASH.chapitre({
+    titre: "Droites, parallèles, perpendiculaires",
+    image: FIG.dessin(3,2,[{seg:[[0,.4],[3,.4]]},{seg:[[0,1.6],[3,1.6]]},{seg:[[1.5,0],[1.5,2]],cls:"fg-bleu"}],{px:20}),
+    nbQuestions: 10,
+    testAuto: false,
+    titres: [{ nom:"Permis droites", medaille:["PERMIS","DROITES","⊥ //"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu maîtrises parallèles et perpendiculaires.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Vocabulaire", nom:"Notations", affiche:"Droite, segment, demi-droite", image:'<span class="ill-dec">[AB] (AB)</span>', types:[NOTATION,NOTATION,APPARTIENT] },
+      { groupe:"Vocabulaire", nom:"Positions de deux droites", affiche:"Parallèles ou perpendiculaires ?", image:'<span class="ill-dec">// ⊥</span>', types:[POSITION,POSITION,ANGLE_DROIT] },
+      { groupe:"Propriétés", nom:"Les trois propriétés", image:'<span class="ill-dec">⊥ + ⊥ → //</span>', types:[PROPRIETES] },
+      { groupe:"Tracer", nom:"Tracer une perpendiculaire", tutos:["perpendiculaire"], image:'<span class="ill-dec">📐 ⊥</span>', nb:5, types:[PERP] },
+      { groupe:"Tracer", nom:"Tracer une parallèle", tutos:["parallele"], image:'<span class="ill-dec">📐 //</span>', nb:5, types:[PARA] },
+      { groupe:"Test", nom:"Test : tout le chapitre", commeTest:true, nb:20, image:'<span class="ill-dec">// ⊥</span>',
+        types:[NOTATION,NOTATION,NOTATION,APPARTIENT,APPARTIENT,POSITION,POSITION,POSITION,ANGLE_DROIT,ANGLE_DROIT,PROPRIETES,PROPRIETES,PROPRIETES,PROPRIETES,PROPRIETES,NOTATION,POSITION,ANGLE_DROIT,PERP,PARA] }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

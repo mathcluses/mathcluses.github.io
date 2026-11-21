@@ -8,27 +8,412 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Nombres décimaux
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : NOMBRES DÉCIMAUX
+  Parties : tableau de numération (lire, partie entière / décimale, écrire en chiffres), rang d'un chiffre,
+  zéros inutiles, différentes écritures (fractions décimales, décompositions), × et ÷ par 10, 100, 1 000,
+  demi-droite graduée, comparer.
+
+  Les nombres sont fabriqués CHIFFRE PAR CHIFFRE (chaînes de caractères : partie entière e, partie décimale d)
+  puis écrits par ecrire(e, d) : pas d'erreur d'arrondi, même avec des milliards.
+  Propositions écrites à la main (choix) : fabriquées par propositions(bonne, fausses), qui enlève les fausses
+  ayant la même valeur que la bonne (sauf si on le demande, pour les zéros inutiles) et en garde 6 à 8.
+  q.large : propositions longues (noms de rangs, phrases) affichées sur 2 colonnes.
+  Mode d'emploi général d'un type de questions : voir ../6qf-fractions/index.html.
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/nombres.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Nombres décimaux",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var O=FLASH.outils, F=O.frac;
+  var N=NOMBRES,ESP=N.ESP,ch=N.ch,nombre=N.nombre,val=N.val,valeur=N.valeur,ecrire=N.ecrire,RANGS=N.RANGS,
+      valeurRang=N.valeurRang,propositions=N.propositions,arrondi=N.arrondi,qte=N.qte,droite=N.droite;   // ../commun/nombres.js
+
+  // ---------- Outils du chapitre ----------
+  var DEC={1:"dixièmes",2:"centièmes",3:"millièmes"},PUISS={1:10,2:100,3:1000};
+  // valeur d'un chiffre selon son rang : 3 au rang 2 → 300 ; 3 au rang −2 → 3/100 (écrit en fraction)
+  function terme(c,p){return p>=0?O.nb(c*Math.pow(10,p)):F(c,Math.pow(10,-p))}
+  function valTerme(c,p){return c*Math.pow(10,p)}
+  // Tableau de numération : classe des mille, classe des unités, partie décimale (dixièmes, centièmes, millièmes).
+  // La virgule est écrite juste après le chiffre des unités, sur le trait entre les unités et les dixièmes.
+  function tableau(e,d){
+    var cols=["C","D","U","C","D","U","dixièmes","centièmes","millièmes"],cases=[];
+    for(var i=0;i<9;i++){
+      var p=5-i,c="";                                 // rang de la colonne : 5 (centaines de mille) … −3 (millièmes)
+      if(p>=0&&p<e.length)c=e[e.length-1-p];
+      if(p<0&&-p<=d.length)c=d[-p-1];
+      cases.push(c);
+    }
+    return '<table class="tab-num" aria-label="tableau de numération"><thead>'+
+      '<tr><th colspan="3">Mille</th><th colspan="3">Unités</th><th colspan="3" class="dec">Partie décimale</th></tr>'+
+      '<tr>'+cols.map(function(c,i){return '<th'+(i===6?' class="dec"':'')+'>'+c+'</th>'}).join("")+'</tr></thead>'+
+      '<tbody><tr>'+cases.map(function(c,i){return '<td'+(i===5?' class="virgule"':i===6?' class="dec"':'')+'>'+c+'</td>'}).join("")+'</tr></tbody></table>';
+  }
+
+  // 4 sortes de graduations, à des endroits variés de la demi-droite (2 et 3 ; 20,1 et 20,2 ; 56,23 et 56,24…) :
+  // unité en 10 (pas 0,1), dixième en 10 (pas 0,01), centième en 10 (pas 0,001), unité en 5 (pas 0,2)
+  function graduation(h){
+    var c=h.choix([1,2,2,3,3,4]),grand=h.choix([h.rnd(0,9),h.rnd(10,99)]);
+    if(c===1)return {debut:grand,pas:.1,nb:20,tous:10,explique:"L’unité est partagée en 10 : une graduation vaut 0,1."};
+    if(c===2)return {debut:arrondi(grand+h.rnd(0,8)/10),pas:.01,nb:20,tous:10,explique:"Un dixième est partagé en 10 : une graduation vaut 0,01."};
+    if(c===3)return {debut:arrondi(grand+h.rnd(0,98)/100),pas:.001,nb:20,tous:10,explique:"Un centième est partagé en 10 : une graduation vaut 0,001."};
+    return {debut:grand,pas:.2,nb:15,tous:5,explique:"L’unité est partagée en 5 : une graduation vaut 0,2."};
+  }
+
+  // ---------- Types de la partie « Tableau de numération » (la liste de la partie fixe combien de fois chacun sort) ----------
+  var LIRE_TAB={
+    nom: "Lire un nombre dans le tableau",
+    gen: function(h){
+      var n=nombre(h,h.rnd(1,6),h.rnd(1,3));
+      return { q: "Quel nombre est écrit dans ce tableau ?"+tableau(n.e,n.d), r: n.v, pieges: [n.v*10,n.v/10,Number(n.e+n.d)],
+               correction: "La virgule se place juste après le chiffre des unités : "+ecrire(n.e,n.d)+"." };
+    }
+  };
+  var PARTIE_ENT={
+    nom: "Partie entière",
+    gen: function(h){
+      var n=nombre(h,h.rnd(1,4),h.rnd(1,3));
+      return { q: "Quelle est la partie <b>entière</b> de "+ecrire(n.e,n.d)+" ?", r: Number(n.e), pieges: [Number(n.d),Number(n.e)+1,n.v],
+               correction: "La partie entière, c’est ce qui est avant la virgule : "+O.nb(Number(n.e))+"." };
+    }
+  };
+  var PARTIE_DEC={
+    nom: "Partie décimale",
+    gen: function(h){
+      var n=nombre(h,h.rnd(1,4),h.rnd(1,3)),x=ecrire(n.e,n.d);
+      return { q: "Quelle est la partie <b>décimale</b> de "+x+" ?", r: val("0",n.d), pieges: [Number(n.d),val("0",n.e)],
+               correction: x+" = "+O.nb(Number(n.e))+" + "+ecrire("0",n.d)+" : la partie décimale est "+ecrire("0",n.d)+"." };
+    }
+  };
+  var LIRE_DEC={
+    nom: "Lire un nombre décimal",
+    gen: function(h){
+      var ne=h.rnd(1,99),k=h.rnd(1,3),d=nombre(h,0,k).d,e=String(ne);
+      var nd=Number(d),lu=function(a,mot,b,j){return [qte(a,mot)+" et "+qte(b,DEC[j]),a*(mot==="dizaines"?10:1)+b/PUISS[j]]};
+      var bonne=lu(ne,"unités",nd,k);
+      var fausses=[1,2,3].map(function(j){return lu(ne,"unités",nd,j)})
+        .concat([lu(nd,"unités",ne,k),lu(ne,"dizaines",nd,k),lu(ne,"unités",nd*10,k),lu(ne+1,"unités",nd,k)]);
+      return { q: "Comment se lit "+ecrire(e,d)+" ?", large: true, choix: propositions(h,bonne,fausses), r: bonne[0],
+               correction: ecrire(e,d)+" : "+k+" chiffre"+(k>1?"s":"")+" après la virgule, donc des "+DEC[k]+"." };
+    }
+  };
+  var ECRIRE={
+    nom: "Écrire en chiffres",
+    gen: function(h){
+      var e=String(h.rnd(0,99)),k=h.rnd(1,3),d=nombre(h,0,k).d,nd=Number(d),v=val(e,d);
+      return { q: "Écris en chiffres : "+O.nw(qte(Number(e),"unités")+" et "+qte(nd,DEC[k])+"."), r: v,
+               pieges: [Number(e)+nd/PUISS[k%3+1],Number(e)+nd/PUISS[(k+1)%3+1],Number(e+""+nd)],
+               correction: qte(nd,DEC[k])+" = "+ecrire("0",d)+", donc "+ecrire(e,d)+"." };
+    }
+  };
+  // 12 dixièmes, 80 dixièmes, 1 500 millièmes… : plus de 10 dixièmes font des unités
+  var DEPASSE={
+    nom: "Plus de 10 dixièmes, 100 centièmes…",
+    gen: function(h){
+      var k=h.rnd(1,3),P=PUISS[k],n,e=h.choix([0,h.rnd(1,20)]);
+      do{n=h.choix([h.rnd(P+1,3*P-1),h.rnd(2,9)*P/h.choix([1,2]),h.rnd(2,30)*10])}while(n<=P||n%1);
+      var v=e+n/P,x=qte(n,DEC[k]);
+      return { q: e?"Écris en chiffres : "+O.nw(qte(e,"unités")+" et "+x+"."):O.nw(x+" = ?"), r: v,
+               pieges: [e+n/(P*10),e+n/(P/10),valeur(e+","+n)],
+               correction: O.nb(P)+" "+DEC[k]+" = 1 unité, donc "+x+" = "+O.nb(n/P)+(e?" et "+e+" + "+O.nb(n/P)+" = "+O.nb(v):"")+"." };
+    }
+  };
+
+  // ---------- Types de la partie « × et ÷ par 10, 100, 1 000 » ----------
+  function rangs(m){var z=String(m).length-1;return z+" rang"+(z>1?"s":"")}
+  var MULT={
+    nom: "Multiplier par 10, 100, 1 000",
+    gen: function(h){
+      var n=nombre(h,h.rnd(1,3),h.rnd(0,3)),m=h.choix([10,100,1000]),r=n.v*m;
+      return { q: ecrire(n.e,n.d)+" × "+O.nb(m)+" = ?", r: r, pieges: [n.v/m,r/10,r*10],
+               correction: "× "+O.nb(m)+" : chaque chiffre avance de "+rangs(m)+" vers la gauche, donc "+O.nb(r)+"." };
+    }
+  };
+  var DIV={
+    nom: "Diviser par 10, 100, 1 000",
+    gen: function(h){
+      var n=nombre(h,h.rnd(1,4),h.rnd(0,2)),m=h.choix([10,100,1000]),r=n.v/m;
+      return { q: ecrire(n.e,n.d)+" ÷ "+O.nb(m)+" = ?", r: r, pieges: [n.v*m,r/10,r*10],
+               correction: "÷ "+O.nb(m)+" : chaque chiffre recule de "+rangs(m)+" vers la droite, donc "+O.nb(r)+"." };
+    }
+  };
+  // a et b tels que a × m = b (fois) ou a ÷ m = b
+  function avantApres(h){
+    var n=nombre(h,h.rnd(1,2),h.rnd(1,2)),m=h.choix([10,100,1000]),fois=h.choix([true,false]);
+    return {m:m,fois:fois,a:fois?n.v:n.v*m,b:fois?n.v*m:n.v};
+  }
+  var FACTEUR={
+    nom: "Trouver le facteur",
+    gen: function(h){
+      var x=avantApres(h);
+      var choix=["10","100","1 000","10 000","0,1","0,01"].map(function(s){return s.replace(" ",ESP)});
+      return { q: O.nw(O.nb(x.a)+(x.fois?" × … = ":" ÷ … = ")+O.nb(x.b)), choix: choix, r: O.nb(x.m),
+               correction: "La virgule s’est décalée de "+rangs(x.m)+" : "+(x.fois?"× ":"÷ ")+O.nb(x.m)+"." };
+    }
+  };
+  var OPERATION={
+    nom: "Choisir l’opération",
+    gen: function(h){
+      var x=avantApres(h),choix=[];
+      ["× ","÷ "].forEach(function(o){[10,100,1000].forEach(function(m){choix.push(o+O.nb(m))})});
+      return { q: "Quelle opération transforme "+O.nw(O.nb(x.a))+" en "+O.nw(O.nb(x.b))+" ?", choix: choix, r: (x.fois?"× ":"÷ ")+O.nb(x.m),
+               correction: "Le nombre devient plus "+(x.fois?"grand : on multiplie":"petit : on divise")+". La virgule s’est décalée de "+rangs(x.m)+" : "+(x.fois?"× ":"÷ ")+O.nb(x.m)+"." };
+    }
+  };
+  // × 0,1 / 0,01 / 0,001 : prendre des dixièmes, centièmes, millièmes, c'est diviser par 10, 100, 1 000
+  var FOIS_DEC={
+    nom: "Multiplier par 0,1 ; 0,01 ; 0,001",
+    gen: function(h){
+      var n=nombre(h,h.rnd(1,3),h.rnd(0,1)),k=h.rnd(1,3),m=PUISS[k],r=n.v/m,f=O.nb(1/m);
+      return { q: ecrire(n.e,n.d)+" × "+f+" = ?", r: r, pieges: [n.v*m,r*10,r/10],
+               correction: "× "+f+", c’est prendre des "+DEC[k]+" : c’est diviser par "+O.nb(m)+". Donc "+O.nb(r)+"." };
+    }
+  };
+
+  // ======================================================================
+  FLASH.chapitre({
+    titre: "Nombres décimaux",
+    image: '<span class="ill-dec">3,14</span>',
+    nbQuestions: 10,
+    nbTest: 20,                                       // le test « tout le chapitre » (ajouté à la fin par le moteur)
+    // Permis décimaux : 2 tests du chapitre d'affilée avec au moins 17 / 20 (seuil non affiché aux élèves)
+    titres: [{
+      nom: "Permis décimaux",
+      medaille: ["PERMIS","DÉCIMAUX","3,14"],
+      serie: { partie: "Test : tout le chapitre", fois: 2, minimum: 17 },
+      condition: "Réussis le test du chapitre (20 questions) 2 fois d’affilée :",
+      bravo: "Tu maîtrises les nombres décimaux.",
+      tampon: "Validé"
+    },
+    // Titre ultime, commun aux deux chapitres de nombres (le même que dans Nombres entiers)
+    { nom: "Maître des nombres", chapitre: "Nombres 6e", medaille: ["MAÎTRE DES","NOMBRES","123"],
+      requiert: [{chapitre:"Nombres entiers",nom:"Permis entiers"},{chapitre:"Nombres décimaux",nom:"Permis décimaux"}],
+      condition: "Obtiens le Permis entiers et le Permis décimaux :", bravo: "Tu maîtrises tous les nombres de 6e !", tampon: "Validé" }],
+    sections: [
+
+      // ---------------------------------------------------------------- 1
+      // 10 questions, une par type de la liste : 2 tableaux, 1 partie entière ET 1 partie décimale (toujours les deux),
+      // 2 « comment se lit », 2 « écrire en chiffres », 2 où les dixièmes (centièmes…) dépassent 1 (12 dixièmes, 1 500 millièmes)
+      { groupe: "Lire et écrire", nom: "Tableau de numération", image: '<span class="ill-dec">U<b>,</b>d c</span>',
+        types: [LIRE_TAB,LIRE_TAB,PARTIE_ENT,PARTIE_DEC,LIRE_DEC,LIRE_DEC,ECRIRE,ECRIRE,DEPASSE,DEPASSE] },
+
+      // ---------------------------------------------------------------- 2
+      // 15 questions : 5 de chaque type
+      { groupe: "Lire et écrire", nom: "Rang d’un chiffre", nb: 15, image: '<span class="ill-dec">4<span class="chiffre-vise">7</span>,2</span>', types: [
+        {
+          nom: "Rang du chiffre coloré",
+          gen: function(h){
+            var n=nombre(h,h.rnd(3,12),h.rnd(0,3)),hauts=n.e.length-1,bas=-n.d.length;
+            // valeur d'un rang pour propositions() : r + 10 (positive, et différente pour chaque rang)
+            var p=h.rnd(bas,hauts),bonne=[RANGS[p],p+10];
+            var fausses=[];
+            [-6,-5,-4,-3,-2,-1,1,2,3,4,5,6].forEach(function(dp){var r=p+dp;if(r>=-3&&r<=11)fausses.push([RANGS[r],r+10])});
+            if(p!==0&&Math.abs(p)<=3)fausses.push([RANGS[-p],-p+10]);   // dizaines ↔ dixièmes, centaines ↔ centièmes…
+            return { q: "Dans "+ecrire(n.e,n.d,p)+", quel est le rang du chiffre <span class=\"chiffre-vise\">coloré</span> ?", large: true,
+                     choix: propositions(h,bonne,fausses).sort(function(a,b){return valeurRang(b)-valeurRang(a)}), r: bonne[0],
+                     correction: "C’est le chiffre des "+RANGS[p]+"."+(p<0?" Après la virgule : dixièmes, centièmes, millièmes.":"") };
+          }
+        },
+        {
+          nom: "Chiffre d’un rang donné",
+          gen: function(h){
+            // chiffres tous différents : une seule bonne réponse possible
+            var nEnt=h.rnd(3,9),nDec=h.rnd(0,Math.min(3,9-nEnt)),c=h.melange([0,1,2,3,4,5,6,7,8,9]);
+            if(c[0]===0)c.push(c.shift());
+            if(nDec&&c[nEnt+nDec-1]===0){var t=c[nEnt+nDec-1];c[nEnt+nDec-1]=c[nEnt+nDec];c[nEnt+nDec]=t}
+            var e=c.slice(0,nEnt).join(""),d=c.slice(nEnt,nEnt+nDec).join("");
+            var p=h.rnd(-nDec,nEnt-1),chiffre=function(r){return Number(r>=0?e[e.length-1-r]:d[-r-1])};
+            var bonne=[String(chiffre(p)),chiffre(p)],fausses=[];
+            for(var r=-nDec;r<nEnt;r++)if(r!==p)fausses.push([String(chiffre(r)),chiffre(r)]);
+            if(fausses.length<7)for(var x=0;x<10;x++)fausses.push([String(x),x]);   // nombre court : d'autres chiffres en plus
+            return { q: "Dans "+ecrire(e,d)+", quel est le chiffre des <b>"+RANGS[p]+"</b> ?", choix: propositions(h,bonne,fausses,true), r: bonne[0],
+                     correction: "Le chiffre des "+RANGS[p]+" est "+bonne[0]+" : "+ecrire(e,d,p)+"." };
+          }
+        },
+        {
+          nom: "Nombre de dixièmes, de centaines…",
+          gen: function(h){
+            var n=nombre(h,h.rnd(1,4),h.rnd(1,3)),p=h.choix([-1,-2,1,2].filter(function(r){return r<0?-r<=n.d.length:r<n.e.length}).concat([-1]));
+            var tout=n.e+n.d,coupe=n.e.length-p,combien=Number(tout.slice(0,coupe)),chiffre=Number(tout[coupe-1]);
+            return { q: "Combien y a-t-il de <b>"+RANGS[p]+"</b> en tout dans "+ecrire(n.e,n.d)+" ?", r: combien,
+                     pieges: [chiffre,Number(tout),Number(tout.slice(0,coupe-1))||chiffre+1,Number(tout.slice(0,coupe+1))],
+                     correction: "On garde tous les chiffres jusqu’à celui des "+RANGS[p]+" : "+ecrire(n.e,n.d,p)+" contient "+O.nb(combien)+" "+RANGS[p]+"." };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 3
+      { groupe: "Lire et écrire", nom: "Zéros inutiles", image: '<span class="ill-dec"><s>0</s>5,3<s>0</s></span>', types: [
+        {
+          nom: "Écrire sans les zéros inutiles",
+          gen: function(h){
+            var a=ch(h,true),b=ch(h,true),c=ch(h,true);
+            var I=h.choix(["0",a,a+"0",a+"0"+b,a+b]),D=h.choix([c,"0"+c,c+"0"+b,b+c]);
+            var zg=h.rnd(1,2),zd=h.rnd(1,2),montre="00".slice(0,zg)+I+","+D+"00".slice(0,zd);
+            if(I==="0")montre="0"+montre;
+            var bonne=I+","+D,sans0=function(s){return s.replace(/0/g,"")};
+            var fausses=[(sans0(I)||"0")+","+sans0(D),bonne+"0","0"+bonne,(sans0(I)||"0")+","+D,I+","+sans0(D),I+D,I+",0"+D,I+"0,"+D,I+","+D+"00"]
+              .map(function(s){return [s,valeur(s)]});
+            return { q: "Écris ce nombre sans les zéros inutiles : <b>"+montre+"</b>", choix: propositions(h,[bonne,valeur(bonne)],fausses,false,true), r: bonne,
+                     correction: "On enlève les zéros au début de la partie entière et à la fin de la partie décimale. Les zéros placés entre deux chiffres restent : "+bonne+"." };
+          }
+        },
+        {
+          nom: "Quel nombre est égal ?",
+          gen: function(h){
+            var a=ch(h,true),b=ch(h,true),I=h.choix([a,a+"0",String(h.rnd(11,99))]),D=h.choix(["0"+b,b+"0"+a,b]);
+            var x=I+","+D,egal=h.choix([x+"0",x+"00","0"+x]);
+            var fausses=[I+","+D.replace(/0/g,""),I+"0,"+D,I+",0"+D,I+","+D.replace(/0/g,"")+"0","0,"+I+D,I+D,I+","+D+"1",I+","+a+D]
+              .map(function(s){return [s,valeur(s)]});
+            return { q: "Quel nombre est égal à <b>"+x+"</b> ?", choix: propositions(h,[egal,valeur(x)],fausses), r: egal,
+                     correction: egal+" = "+x+" : on a seulement ajouté des zéros inutiles. Enlever ou ajouter un zéro entre deux chiffres change le nombre !" };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 4
+      // 15 questions : 3 de chaque type
+      { groupe: "Lire et écrire", nom: "Différentes écritures", nb: 15, image: F(152,100)+"<span>=1,52</span>", types: [
+        {
+          nom: "Entier + fraction décimale",
+          gen: function(h){
+            var n=nombre(h,h.rnd(1,2),h.rnd(1,3)),k=n.d.length,num=Number(n.d),e=n.e,ve=Number(e);
+            var f=function(a,b){return [F(a,b),ve+a/b]};
+            var bonne=f(num,PUISS[k]);
+            var fausses=[f(num,10),f(num,100),f(num,1000),f(Number(n.d.split("").reverse().join("")),PUISS[k]),f(Number(n.d[0]),PUISS[k]),f(num*10,PUISS[k]),f(ve,PUISS[k]),f(num+1,PUISS[k]),f(num*100,PUISS[k]),f(num+10,PUISS[k])];
+            return { q: ecrire(e,n.d)+" = "+O.nb(ve)+" + …", choix: propositions(h,bonne,fausses), r: bonne[0],
+                     correction: "Après la virgule, "+ecrire("0",n.d)+" = "+qte(num,DEC[k])+" = "+F(num,PUISS[k])+"." };
+          }
+        },
+        {
+          nom: "Unités et centièmes",
+          gen: function(h){
+            var n=nombre(h,h.rnd(1,2),h.rnd(1,3)),k=n.d.length,tout=h.choix([true,false]);
+            var x=ecrire(n.e,n.d),r=tout?Number(n.e+n.d):Number(n.d);
+            return tout
+              ? { q: x+" = … "+DEC[k], r: r, pieges: [Number(n.d),r*10,Number(n.e)],
+                  correction: x+" = "+F(r,PUISS[k])+" = "+O.nb(r)+" "+DEC[k]+"." }
+              : { q: x+" = "+O.nw(qte(Number(n.e),"unités")+" et … "+DEC[k]), r: r, pieges: [Number(n.e+n.d),r*10,Number(n.d[0])],
+                  correction: x+" = "+O.nb(Number(n.e))+" + "+F(r,PUISS[k])+" : "+qte(Number(n.e),"unités")+" et "+qte(r,DEC[k])+"." };
+          }
+        },
+        {
+          nom: "Compléter une décomposition",
+          gen: function(h){
+            var n=nombre(h,h.rnd(2,3),h.rnd(2,3)),termes=[];
+            for(var i=0;i<n.e.length;i++)termes.push([Number(n.e[i]),n.e.length-1-i]);
+            for(var j=0;j<n.d.length;j++)termes.push([Number(n.d[j]),-(j+1)]);
+            termes=termes.filter(function(t){return t[0]>0});
+            var cache=h.choix(termes),c=cache[0],p=cache[1];
+            var ecrits=termes.map(function(t){return t===cache?"…":terme(t[0],t[1])}).join(" + ");
+            var bonne=[terme(c,p),valTerme(c,p)],fausses=[];
+            [-3,-2,-1,0,1,2].forEach(function(r){if(r!==p)fausses.push([terme(c,r),valTerme(c,r)])});
+            termes.forEach(function(t){if(t[0]!==c)fausses.push([terme(t[0],p),valTerme(t[0],p)])});
+            return { q: ecrire(n.e,n.d)+" = "+ecrits, choix: propositions(h,bonne,fausses), r: bonne[0],
+                     correction: "Le chiffre "+c+" est celui des "+RANGS[p]+" : il vaut "+bonne[0]+". "+ecrire(n.e,n.d)+" = "+termes.map(function(t){return terme(t[0],t[1])}).join(" + ")+"." };
+          }
+        },
+        {
+          nom: "Décimal → fraction décimale",
+          gen: function(h){
+            var n=nombre(h,h.rnd(0,2),h.rnd(1,3)),k=n.d.length,den=PUISS[Math.min(3,k+h.choix([0,0,1]))];
+            var num=Math.round(n.v*den);
+            return { q: ecrire(n.e,n.d)+" = "+F("…",den), r: num, pieges: [num*10,Math.round(num/10)||num+1,Number(n.d)],
+                     correction: ecrire(n.e,n.d)+" × "+O.nb(den)+" = "+O.nb(num)+", donc "+ecrire(n.e,n.d)+" = "+F(O.nb(num),O.nb(den))+"." };
+          }
+        },
+        {
+          nom: "Fraction décimale → nombre décimal",
+          gen: function(h){
+            var den=h.choix([10,100,1000]),num;
+            do{num=h.rnd(1,den*20)}while(num%10===0);
+            return { q: F(O.nb(num),O.nb(den))+" = ?", r: num/den, pieges: [num/den*10,num/den/10],
+                     correction: F(O.nb(num),O.nb(den))+" = "+O.nb(num)+" ÷ "+O.nb(den)+" = "+O.nb(num/den)+" : "+qte(num,DEC[String(den).length-1])+"." };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 5
+      // 15 questions : 3 ×, 3 ÷, 3 facteurs à trouver, 4 opérations à choisir, 2 × 0,1 / 0,01 / 0,001
+      { groupe: "Calculer", nom: "× et ÷ par 10, 100, 1 000", nb: 15, image: '<span class="ill-dec">× 100</span>',
+        types: [MULT,MULT,MULT,DIV,DIV,DIV,FACTEUR,FACTEUR,FACTEUR,OPERATION,OPERATION,OPERATION,OPERATION,FOIS_DEC,FOIS_DEC] },
+
+      // ---------------------------------------------------------------- 6
+      { groupe: "Repérer et comparer", nom: "Demi-droite graduée", image: droite(2,.1,10,10,[{k:3,nom:"A"}]), types: [
+        {
+          nom: "Lire une abscisse",
+          gen: function(h){
+            var g=graduation(h),k;
+            do{k=h.rnd(1,g.nb-1)}while(k%g.tous===0);
+            var v=arrondi(g.debut+k*g.pas);
+            return { q: "Quelle est l’abscisse du point A ?"+droite(g.debut,g.pas,g.nb,g.tous,[{k:k,nom:"A"}]), r: v,
+                     pieges: [arrondi(g.debut+k*g.pas/10),arrondi(g.debut+k*g.pas*10),arrondi(g.debut+(k+1)*g.pas),arrondi(g.debut+(k-1)*g.pas),
+                              g.pas===.2?arrondi(g.debut+k*.1):arrondi(g.debut+k*g.pas*2)],
+                     correction: g.explique+" A est à "+qte(k,"graduations")+" de "+O.nb(g.debut)+" : "+O.nb(v)+"." };
+          }
+        },
+        {
+          nom: "Trouver le point",
+          gen: function(h){
+            var g=graduation(h),ks=[],k;
+            do{k=h.rnd(1,g.nb-1)}while(k%g.tous===0);
+            ks.push(k);if(k>1)ks.push(k-1);if(k<g.nb-1)ks.push(k+1);
+            while(ks.length<6){var x=h.rnd(0,g.nb);if(ks.indexOf(x)<0)ks.push(x)}
+            ks.sort(function(a,b){return a-b});
+            var lettres=["A","B","C","D","E","F"],v=arrondi(g.debut+k*g.pas),bonne=lettres[ks.indexOf(k)];
+            return { q: "Quel point a pour abscisse <b>"+O.nb(v)+"</b> ?"+droite(g.debut,g.pas,g.nb,g.tous,ks.map(function(x,i){return {k:x,nom:lettres[i]}})),
+                     choix: lettres, r: bonne,
+                     correction: g.explique+" "+O.nb(v)+" est à "+qte(k,"graduations")+" de "+O.nb(g.debut)+" : c’est le point "+bonne+"." };
+          }
+        }
+      ]},
+
+      // ---------------------------------------------------------------- 7
+      { groupe: "Repérer et comparer", nom: "Comparer des décimaux", image: '<span class="ill-dec">3,5 &gt; 3,45</span>', types: [
+        {
+          nom: "Comparer deux nombres",
+          gen: function(h){
+            var e=String(h.rnd(0,30)),x=h.rnd(2,9),y=h.rnd(1,x-1),z=ch(h,true),a,b,expl;
+            switch(h.rnd(1,4)){
+              case 1: a=e+","+x;b=e+","+y+z;expl="Même partie entière : on compare les dixièmes ("+x+" et "+y+"). Le nombre de chiffres après la virgule ne compte pas !";break;
+              case 2: a=e+","+x;b=e+","+x+"0";expl="Un zéro à la fin de la partie décimale est inutile : les deux nombres sont égaux.";break;
+              case 3: a=e+","+x;b=e+",0"+x;expl="Même partie entière : on compare les dixièmes ("+x+" et 0).";break;
+              default: var e2=Number(e)+h.rnd(1,9);a=e2+","+y;b=e+","+x+z+ch(h,true);expl="On compare d’abord les parties entières : "+e2+" et "+e+".";
+            }
+            if(h.choix([true,false])){var t=a;a=b;b=t}
+            var va=valeur(a),vb=valeur(b),r=va<vb?"&lt;":va>vb?"&gt;":"=";
+            return { q: "Complète avec &lt;, = ou &gt; : "+O.nw(a+" … "+b), choix: ["&lt;","=","&gt;"], r: r, correction: a+" "+r+" "+b+". "+expl };
+          }
+        },
+        {
+          nom: "Le plus grand, le plus petit",
+          gen: function(h){
+            var e=String(h.rnd(0,20)),a=ch(h,true),b;
+            do{b=ch(h,true)}while(b===a);
+            var decs=h.melange([a,b,a+b,b+a,"0"+a,"0"+b,a+"0"+b,b+"0"+a]).slice(0,h.rnd(6,7));
+            var nbs=decs.map(function(d){return e+","+d}),grand=h.choix([true,false]);
+            var r=nbs.slice().sort(function(x,y){return grand?valeur(y)-valeur(x):valeur(x)-valeur(y)})[0];
+            return { q: "Quel est le plus <b>"+(grand?"grand":"petit")+"</b> de ces nombres ?", choix: nbs, r: r,
+                     correction: "Même partie entière : on compare les dixièmes, puis les centièmes, puis les millièmes. Le plus "+(grand?"grand":"petit")+" est "+r+"." };
+          }
+        },
+        {
+          nom: "Intercaler un nombre",
+          gen: function(h){
+            var e=h.rnd(0,20),t=h.rnd(0,8),d=h.rnd(1,9),bas=e+t/10,haut=arrondi(bas+.1);
+            var bonne=e+","+t+d,s=function(x){return O.nb(arrondi(x))};
+            var fausses=[e+","+(t+1)+d,e+",0"+t,O.nb(bas),O.nb(haut),(e+1)+","+t+d,e+","+d+t,e+","+(t+1)+"0"+d,s(bas+d/1000+.1)].filter(function(x){var v=valeur(x);return !(v>bas&&v<haut)});
+            return { q: "Quel nombre est compris entre "+O.nb(bas)+" et "+O.nb(haut)+" ?", choix: propositions(h,[bonne,valeur(bonne)],fausses.map(function(x){return [x,valeur(x)]})), r: bonne,
+                     correction: "On ajoute un zéro inutile pour mieux voir : "+O.nb(bas)+" = "+e+","+t+"0 et "+O.nb(haut)+" = "+e+","+(t+1)+"0. "+bonne+" est entre les deux." };
+          }
+        }
+      ]}
+
+    ]
+  });
+
+})();
 </script>
 </body>
 </html>

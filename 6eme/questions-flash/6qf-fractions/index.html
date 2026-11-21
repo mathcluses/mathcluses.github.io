@@ -27,6 +27,7 @@
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
 <script>
 (function(){
   var F=FLASH.outils.frac, M=FLASH.outils.mixte, O=FLASH.outils;
@@ -52,6 +53,10 @@
     image: O.disque(4,3),
     nbQuestions: 10,
     nbTest: 20,
+    // Permis fractions : 2 tests du chapitre d'affilée avec au moins 17 / 20 (le test est ajouté à la fin par le moteur)
+    titres: [{ nom:"Permis fractions", medaille:["PERMIS","FRACTIONS","¾"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu maîtrises les fractions.", tampon:"Validé" }],
     sections: [
 
       // ---------------------------------------------------------------- 1

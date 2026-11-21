@@ -8,27 +8,108 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Tableaux et graphiques
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : TABLEAUX ET GRAPHIQUES (organisation et gestion de données)
+  Parties : lire un tableau à double entrée, totaux, diagramme en barres (lire, comparer, écart),
+  graphique (courbe : lire une valeur, le maximum), diagramme circulaire simple (moitié, quart).
+  Titre : « Permis données » (2 tests d'affilée à 17 / 20 ou plus).
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/figures.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Tableaux et graphiques",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var O=FLASH.outils, nb=O.nb;
+  var THEMES=[
+    {titre:"Sport préféré des élèves",lignes:["6e A","6e B","6e C"],colonnes:["Foot","Basket","Danse","Judo"],unite:"élèves"},
+    {titre:"Livres empruntés au CDI",lignes:["Lundi","Mardi","Jeudi"],colonnes:["BD","Romans","Mangas","Docs"],unite:"livres"},
+    {titre:"Fruits vendus au marché (kg)",lignes:["Matin","Après-midi"],colonnes:["Pommes","Poires","Fraises","Cerises"],unite:"kg"}];
+
+  // ---------- Tableaux ----------
+  function tableau(h){
+    var T=h.choix(THEMES),v=T.lignes.map(function(){return T.colonnes.map(function(){return h.rnd(2,19)})});
+    var html='<table class="tab-donnees"><caption>'+T.titre+'</caption><tr><th></th>'+T.colonnes.map(function(c){return '<th>'+c+'</th>'}).join("")+'</tr>'+
+      T.lignes.map(function(l,i){return '<tr><th>'+l+'</th>'+v[i].map(function(x){return '<td>'+x+'</td>'}).join("")+'</tr>'}).join("")+'</table>';
+    return {T:T,v:v,html:html};
+  }
+  var LIRE_TABLEAU={ nom:"Lire un tableau", gen:function(h){
+    var t=tableau(h),i=h.rnd(0,t.T.lignes.length-1),j=h.rnd(0,t.T.colonnes.length-1),r=t.v[i][j];
+    var autres=[].concat.apply([],t.v).filter(function(x){return x!==r});
+    return {q:"Combien pour « "+t.T.colonnes[j]+" » en « "+t.T.lignes[i]+" » ?"+t.html,r:r,pieges:[t.v[(i+1)%t.v.length][j],t.v[i][(j+1)%t.v[0].length],autres[0]],
+            correction:"Ligne « "+t.T.lignes[i]+" », colonne « "+t.T.colonnes[j]+" » : "+r+" "+t.T.unite+"."};
+  }};
+  var TOTAL={ nom:"Totaux", gen:function(h){
+    var t=tableau(h),parLigne=h.choix([true,false]);
+    if(parLigne){var i=h.rnd(0,t.T.lignes.length-1),s=t.v[i].reduce(function(a,b){return a+b});
+      return {q:"Combien en tout pour « "+t.T.lignes[i]+" » ?"+t.html,r:s,pieges:[s+10,s-1,Math.max.apply(null,t.v[i]),s+t.v[i][0]],correction:t.v[i].join(" + ")+" = "+s+" "+t.T.unite+"."}}
+    var j=h.rnd(0,t.T.colonnes.length-1),col=t.v.map(function(l){return l[j]}),s2=col.reduce(function(a,b){return a+b});
+    return {q:"Combien en tout pour « "+t.T.colonnes[j]+" » ?"+t.html,r:s2,pieges:[s2+10,s2-1,Math.max.apply(null,col),s2+col[0]],correction:col.join(" + ")+" = "+s2+" "+t.T.unite+"."};
+  }};
+
+  // ---------- Diagramme en barres ----------
+  function barres(h){
+    var noms=h.choix([["Lun","Mar","Mer","Jeu","Ven"],["Chat","Chien","Lapin","Poisson","Oiseau"],["Rouge","Bleu","Vert","Jaune","Noir"]]),pas=h.choix([1,2,5,10]),max=pas*10;
+    var v=noms.map(function(){return pas*h.rnd(1,10)}),W=8,H=5,bw=W/noms.length,els=[];
+    for(var k=0;k<=10;k+=(pas===1?1:2)){var y=H-k*H/10;els.push({seg:[[0,y],[W,y]],cls:"fg-q"},{texte:[-.35,y+.12],t:String(k*pas),cls:"petit"})}
+    v.forEach(function(x,i){var hgt=x/max*H;els.push({poly:[[i*bw+.2,H],[i*bw+bw-.2,H],[i*bw+bw-.2,H-hgt],[i*bw+.2,H-hgt]],plein:1},{texte:[i*bw+bw/2,H+.45],t:noms[i],cls:"petit"})});
+    els.push({seg:[[0,0],[0,H]]},{seg:[[0,H],[W,H]]});
+    return {noms:noms,v:v,pas:pas,svg:FIG.dessin(W,H+.3,els,{px:36})};
+  }
+  var LIRE_BARRES={ nom:"Diagramme en barres", gen:function(h){
+    var B=barres(h),cas=h.rnd(1,3);
+    if(cas===1){var i=h.rnd(0,4);return {q:"Quelle est la valeur pour « "+B.noms[i]+" » ?"+B.svg,r:B.v[i],pieges:[B.v[i]+B.pas,B.v[i]-B.pas,B.v[(i+1)%5],B.v[i]/B.pas],
+      correction:"On lit en face du haut de la barre, sur l’axe vertical (graduations de "+B.pas+" en "+B.pas+(B.pas>1?", une ligne sur deux est écrite":"")+") : "+B.v[i]+"."}}
+    if(cas===2){var mx=Math.max.apply(null,B.v),dbl=B.v.filter(function(x){return x===mx}).length>1;
+      if(!dbl){var k=B.v.indexOf(mx);return {q:"Quelle catégorie a la plus grande valeur ?"+B.svg,choix:B.noms,r:B.noms[k],correction:"La barre la plus haute : « "+B.noms[k]+" » ("+mx+")."}}}
+    var a=h.rnd(0,4),b;do{b=h.rnd(0,4)}while(b===a||B.v[a]===B.v[b]);var d=Math.abs(B.v[a]-B.v[b]);
+    return {q:"Quel est l’écart entre « "+B.noms[a]+" » et « "+B.noms[b]+" » ?"+B.svg,r:d,pieges:[B.v[a]+B.v[b],d+B.pas,Math.max(B.v[a],B.v[b])],correction:"|"+B.v[a]+" − "+B.v[b]+"| = "+d+"."};
+  }};
+
+  // ---------- Graphique (courbe) ----------
+  var COURBE={ nom:"Lire un graphique", gen:function(h){
+    var heures=[8,10,12,14,16,18,20],t=[h.rnd(2,8)];for(var i=1;i<7;i++)t.push(Math.max(0,Math.min(24,t[i-1]+h.choix([-2,0,2,2,4,-4]))));
+    var W=8,H=5,k=H/24,els=[];
+    for(var y=0;y<=24;y+=4)els.push({seg:[[0,H-y*k],[W,H-y*k]],cls:"fg-q"},{texte:[-.4,H-y*k+.12],t:y+"°",cls:"petit"});
+    heures.forEach(function(x,i){var px=i*W/6;els.push({seg:[[px,0],[px,H]],cls:"fg-q"},{texte:[px,H+.45],t:x+" h",cls:"petit"})});
+    els.push({ligne:t.map(function(v,i){return [i*W/6,H-v*k]}),cls:"fg-bleu"});t.forEach(function(v,i){els.push({point:[i*W/6,H-v*k]})});
+    var svg=FIG.dessin(W,H+.3,els,{px:36});
+    if(h.choix([true,false])){var j=h.rnd(0,6);return {q:"Quelle température fait-il à "+heures[j]+" h (en °C) ?"+svg,r:t[j],pieges:[t[j]+2,t[j]-2,heures[j],t[(j+1)%7]],
+      correction:"On part de "+heures[j]+" h sur l’axe horizontal, on monte jusqu’à la courbe, puis on lit sur l’axe vertical : "+t[j]+" °C."}}
+    var mx=Math.max.apply(null,t),idx=t.indexOf(mx);
+    if(t.filter(function(v){return v===mx}).length===1)return {q:"À quelle heure fait-il le plus chaud ?"+svg,choix:heures.map(function(x){return x+" h"}),r:heures[idx]+" h",correction:"Le point le plus haut de la courbe est à "+heures[idx]+" h ("+mx+" °C)."};
+    return {q:"Quelle est la température la plus haute de la journée (en °C) ?"+svg,r:mx,pieges:[mx-2,mx+2,heures[idx]],correction:"Le point le plus haut de la courbe : "+mx+" °C."};
+  }};
+
+  // ---------- Diagramme circulaire (moitié, quart…) ----------
+  var CIRCULAIRE={ nom:"Diagramme circulaire", gen:function(h){
+    var parts=h.choix([[2,1,1],[1,1,2],[3,1],[1,1,1,1],[2,2]]),tot=parts.reduce(function(a,b){return a+b}),cl=["fg-plein","fg-plein2","fg-plein","fg-plein2"];
+    var C=[2,2],R=1.8,a=0,els=[],noms=["rouge","bleu","vert","jaune"],i=h.rnd(0,parts.length-1);
+    parts.forEach(function(p,k){var a1=a+p/tot*2*Math.PI,P0=[C[0]+R*Math.cos(a),C[1]+R*Math.sin(a)],P1=[C[0]+R*Math.cos(a1),C[1]+R*Math.sin(a1)];
+      var pts=[C];for(var s=0;s<=12;s++){var t=a+(a1-a)*s/12;pts.push([C[0]+R*Math.cos(t),C[1]+R*Math.sin(t)])}
+      els.push({tri:pts,cls:k===i?"plein2":"plein"});var m=(a+a1)/2;els.push({texte:[C[0]+R*.55*Math.cos(m),C[1]+R*.55*Math.sin(m)+.12],t:String.fromCharCode(65+k),cls:"cote"});a=a1});
+    var fr=parts[i]/tot,r=fr===.5?"la moitié":fr===.25?"le quart":fr===.75?"les trois quarts":"";
+    return {q:"Quelle part du disque représente le secteur "+String.fromCharCode(65+i)+" (en rose) ?"+FIG.dessin(4,4,els,{px:34}),choix:["la moitié","le quart","les trois quarts","le tiers"],r:r,
+            correction:"Le secteur "+String.fromCharCode(65+i)+" occupe "+r+" du disque."};
+  }};
+
+  FLASH.chapitre({
+    titre: "Tableaux et graphiques",
+    image: '<span class="ill-dec">📊</span>',
+    nbQuestions: 10,
+    testAuto: false,
+    titres: [{ nom:"Permis données", medaille:["PERMIS","DONNÉES","📊"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu sais lire tableaux et graphiques.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Tableaux", nom:"Lire un tableau", image:'<span class="ill-dec">▦</span>', types:[LIRE_TABLEAU] },
+      { groupe:"Tableaux", nom:"Totaux", image:'<span class="ill-dec">Σ</span>', types:[TOTAL] },
+      { groupe:"Graphiques", nom:"Diagramme en barres", image:'<span class="ill-dec">📊</span>', types:[LIRE_BARRES] },
+      { groupe:"Graphiques", nom:"Lire un graphique", image:'<span class="ill-dec">📈</span>', types:[COURBE] },
+      { groupe:"Graphiques", nom:"Diagramme circulaire", image:'<span class="ill-dec">◔</span>', types:[CIRCULAIRE] },
+      { groupe:"Test", nom:"Test : tout le chapitre", commeTest:true, nb:20, image:'<span class="ill-dec">📊</span>',
+        types:[LIRE_TABLEAU,LIRE_TABLEAU,LIRE_TABLEAU,LIRE_TABLEAU,TOTAL,TOTAL,TOTAL,TOTAL,LIRE_BARRES,LIRE_BARRES,LIRE_BARRES,LIRE_BARRES,COURBE,COURBE,COURBE,COURBE,CIRCULAIRE,CIRCULAIRE,CIRCULAIRE,CIRCULAIRE] }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

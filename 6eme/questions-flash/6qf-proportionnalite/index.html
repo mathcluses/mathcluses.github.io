@@ -8,27 +8,127 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Proportionnalité
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : PROPORTIONNALITÉ
+  Parties : situations (fois plus, passage à l'unité, additivité), tableaux de proportionnalité,
+  proportionnel ou pas ?, échelles.
+  L'erreur typique proposée à chaque fois : « ajouter la même chose » au lieu de multiplier.
+  Titre : « Permis proportionnalité » (2 tests du chapitre d'affilée à 17 / 20 ou plus).
+  Mode d'emploi : voir ../6qf-fractions/index.html.
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/nombres.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Proportionnalité",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var O=FLASH.outils, N=NOMBRES, nb=O.nb, A=N.arrondi;
+  // prix : 7,50 € (deux chiffres après la virgule quand il y a des centimes)
+  function eur(x){return (x%1?nb(Math.floor(x))+","+Math.round(x%1*100).toString().padStart(2,"0"):nb(x))+" €"}
+  // objets à acheter : nom au pluriel, prix d'un objet (en centimes, pour des prix « ronds »)
+  var OBJETS=[["cahiers",[80,120,150,250],"un cahier"],["stylos",[50,60,75,120],"un stylo"],["croissants",[90,110,120,130],"un croissant"],
+              ["places de cinéma",[650,700,800,900],"une place"],["baguettes",[95,110,120],"une baguette"],["bouteilles d’eau",[40,60,80],"une bouteille"],
+              ["billets de bus",[150,170,200],"un billet"]];
+
+  // ---------- Situations ----------
+  var FOIS_PLUS={ nom:"Fois plus, fois moins", gen:function(h){
+    var o=h.choix(OBJETS),p=h.choix(o[1])/100,a=h.rnd(2,5),k=h.rnd(2,4),b=a*k,inverse=h.choix([true,false]);
+    if(inverse){var t=a;a=b;b=t}
+    var r=A(p*b);
+    return {q:a+" "+o[0]+" coûtent "+eur(A(p*a))+". Combien coûtent "+b+" "+o[0]+" ?",r:r,pieges:[A(p*a+(b-a)),A(p*a*b),A(p*a+b)],
+            correction:b+" = "+(inverse?a+" ÷ "+(a/b):a+" × "+k)+" : on "+(inverse?"divise":"multiplie")+" le prix pareil. "+eur(A(p*a))+(inverse?" ÷ "+(a/b):" × "+k)+" = "+eur(r)+"."};
+  }};
+  var UNITE={ nom:"Passage à l’unité", gen:function(h){
+    var o=h.choix(OBJETS),p=h.choix(o[1])/100,a=h.rnd(3,6),b;do{b=h.rnd(2,9)}while(b===a||b%a===0||a%b===0);
+    var r=A(p*b),seul=h.choix([true,false]);
+    return seul
+      ? {q:a+" "+o[0]+" coûtent "+eur(A(p*a))+". Combien coûte "+o[2]+" ?",r:p,pieges:[A(p*a-a),A(p*a*a),A(p*10)],correction:eur(A(p*a))+" ÷ "+a+" = "+eur(p)+"."}
+      : {q:a+" "+o[0]+" coûtent "+eur(A(p*a))+". Combien coûtent "+b+" "+o[0]+" ?",r:r,pieges:[A(p*a+(b-a)),A(p*a-(a-b)),A(p*a*b)],
+         correction:o[2].charAt(0).toUpperCase()+o[2].slice(1)+" : "+eur(A(p*a))+" ÷ "+a+" = "+eur(p)+". Donc "+b+" objets : "+b+" × "+eur(p)+" = "+eur(r)+"."};
+  }};
+  var ADDITIVITE={ nom:"Additionner les quantités", gen:function(h){
+    var p=h.choix([1.5,2,2.5,3,3.5,4,6]),a=h.rnd(1,4),b=h.rnd(2,5);
+    return {q:"Les pommes : "+a+" kg coûtent "+eur(A(p*a))+" et "+b+" kg coûtent "+eur(A(p*b))+". Combien coûtent "+(a+b)+" kg ?",r:A(p*(a+b)),
+            pieges:[A(p*a*p*b),A(p*(a+b)+1),A(p*a+b)],correction:(a+b)+" kg = "+a+" kg + "+b+" kg, donc "+eur(A(p*a))+" + "+eur(A(p*b))+" = "+eur(A(p*(a+b)))+"."};
+  }};
+  var RECETTE={ nom:"Recette", gen:function(h){
+    var pers=h.choix([2,4,6]),k=h.choix([2,3,.5]),ing=h.choix([["g de farine",[100,150,200,250]],["œufs",[2,3,4]],["cL de lait",[20,25,30,50]],["g de sucre",[50,60,80,100]]]);
+    var q=h.choix(ing[1]),n=pers*k;if(!Number.isInteger(q*k)){k=2;n=pers*2}
+    return {q:"Pour "+pers+" personnes, il faut "+q+" "+ing[0]+". Combien en faut-il pour "+n+" personnes ?",r:q*k,pieges:[q+(n-pers),q*k+pers,q*n],
+            correction:n+" personnes, c’est "+(k<1?"2 fois moins":k+" fois plus")+" que "+pers+" : "+q+(k<1?" ÷ 2":" × "+k)+" = "+(q*k)+" "+ing[0]+"."};
+  }};
+
+  // ---------- Tableaux ----------
+  function tableau(l1,l2,titres){
+    var c=function(x){return x===null?'<b class="trou">?</b>':nb(x)};
+    return '<table class="tab-prop"><tr><th>'+titres[0]+'</th>'+l1.map(function(x){return '<td>'+c(x)+'</td>'}).join("")+'</tr>'+
+           '<tr><th>'+titres[1]+'</th>'+l2.map(function(x){return '<td>'+c(x)+'</td>'}).join("")+'</tr></table>';
+  }
+  var TITRES=[["Quantité (kg)","Prix (€)"],["Nombre de paquets","Nombre de biscuits"],["Durée (h)","Distance (km)"],["Nombre de tours","Distance (m)"]];
+  var COMPLETER={ nom:"Compléter un tableau", gen:function(h){
+    var c=h.choix([2,3,4,5,6,1.5,2.5]),l1=h.melange([1,2,3,4,5,6,8,10]).slice(0,4).sort(function(a,b){return a-b}),l2=l1.map(function(x){return A(x*c)});
+    var i=h.rnd(1,3),r=l2[i],haut=h.choix([true,false]);
+    if(haut){r=l1[i];var t1=l1.slice();t1[i]=null;var html=tableau(t1,l2,h.choix(TITRES))}
+    else{var t2=l2.slice();t2[i]=null;html=tableau(l1,t2,h.choix(TITRES))}
+    return {q:"Ce tableau est un tableau de proportionnalité. Quel nombre remplace « ? » ?"+html,r:r,
+            pieges:haut?[A(r+1),A(l2[i]-c),A(r*2)]:[A(l2[0]+l1[i]-l1[0]),A(r+c),A(r*2)],
+            correction:"On passe de la 1<sup>re</sup> ligne à la 2<sup>e</sup> en multipliant par "+nb(c)+(haut?" : on divise donc "+nb(l2[i])+" par "+nb(c)+" = "+nb(r):" : "+nb(l1[i])+" × "+nb(c)+" = "+nb(r))+"."};
+  }};
+  var COEFFICIENT={ nom:"Coefficient de proportionnalité", gen:function(h){
+    var c=h.choix([2,3,4,5,6,7,8,1.5,2.5,0.5]),l1=h.melange([2,3,4,5,6,8,10]).slice(0,3).sort(function(a,b){return a-b});
+    return {q:"Par quel nombre multiplie-t-on la 1<sup>re</sup> ligne pour obtenir la 2<sup>e</sup> ?"+tableau(l1,l1.map(function(x){return A(x*c)}),h.choix(TITRES)),
+            r:c,pieges:[A(l1[0]*c-l1[0]),A(c+1),A(c*2),A(1/c)],correction:nb(A(l1[0]*c))+" ÷ "+l1[0]+" = "+nb(c)+" : c’est le coefficient de proportionnalité."};
+  }};
+  var EST_PROP={ nom:"Tableau de proportionnalité ou pas ?", gen:function(h){
+    var c=h.rnd(2,6),l1=h.melange([1,2,3,4,5,6,8,10]).slice(0,3).sort(function(a,b){return a-b}),l2=l1.map(function(x){return x*c}),oui=h.choix([true,false]);
+    if(!oui){if(h.choix([true,false]))l2=l1.map(function(x){return x+c*l1[0]-l1[0]});else l2[2]+=h.choix([1,-1,c])}   // « on ajoute » ou un nombre faux
+    return {q:"Est-ce un tableau de proportionnalité ?"+tableau(l1,l2,h.choix(TITRES)),choix:["Oui","Non"],r:oui?"Oui":"Non",
+            correction:oui?"On multiplie toujours par "+c+" : c’est un tableau de proportionnalité."
+                          :"On ne multiplie pas toujours par le même nombre ("+l2.map(function(y,i){return nb(y)+" ÷ "+l1[i]+" = "+nb(A(y/l1[i]))}).join(" ; ")+")."};
+  }};
+
+  // ---------- Proportionnel ou pas ? ----------
+  var SITUATIONS=[
+    ["Le prix payé et le nombre de baguettes achetées (même boulangerie).",1],["La quantité d’essence et le prix payé à la pompe.",1],
+    ["Le périmètre d’un carré et la longueur de son côté.",1],["Le nombre de tickets et le prix, quand un ticket coûte 2 €.",1],
+    ["La distance parcourue et la durée, à vitesse constante.",1],["La quantité de farine et le nombre de crêpes (même recette).",1],
+    ["Le nombre de roues et le nombre de vélos.",1],["Le salaire et le nombre d’heures, payé 12 € de l’heure.",1],
+    ["La taille d’un enfant et son âge.",0],["Le poids d’une personne et sa taille.",0],["Ta note au contrôle et le temps passé à réviser.",0],
+    ["L’aire d’un carré et la longueur de son côté.",0],["Le prix d’un taxi (avec une prise en charge de 4 €) et la distance.",0],
+    ["La température et l’heure de la journée.",0],["Le prix et la quantité, avec « le 3e produit offert ».",0],["La pointure et l’âge d’un élève.",0]
+  ];
+  var PROP_OU_PAS={ nom:"Proportionnel ou pas ?", gen:function(h){
+    var s=h.choix(SITUATIONS);
+    return {q:"Ces deux grandeurs sont-elles proportionnelles ? <br>"+s[0],choix:["Oui","Non"],r:s[1]?"Oui":"Non",
+            correction:s[1]?"Si l’une est multipliée par 2, 3…, l’autre aussi : c’est proportionnel.":"Si l’une double, l’autre ne double pas forcément : ce n’est pas proportionnel."};
+  }};
+
+  // ---------- Échelles ----------
+  var ECHELLE={ nom:"Échelles et cartes", gen:function(h){
+    var u=h.choix([[5,"km"],[2,"km"],[10,"km"],[50,"m"],[100,"m"],[20,"km"]]),cm=h.rnd(2,9),reel=cm*u[0],sens=h.choix([true,false]);
+    return sens
+      ? {q:"Sur une carte, 1 cm représente "+u[0]+" "+u[1]+". Quelle distance réelle représentent "+cm+" cm ?",r:reel,pieges:[cm+u[0],reel*10,cm],
+         correction:cm+" × "+u[0]+" = "+reel+" "+u[1]+"."}
+      : {q:"Sur une carte, 1 cm représente "+u[0]+" "+u[1]+". "+reel+" "+u[1]+" en vrai, c’est combien de cm sur la carte ?",r:cm,pieges:[reel-u[0],reel*u[0],cm+1],
+         correction:reel+" ÷ "+u[0]+" = "+cm+" cm."};
+  }};
+
+  FLASH.chapitre({
+    titre: "Proportionnalité",
+    image: '<span class="ill-dec">× 3</span>',
+    nbQuestions: 10,
+    nbTest: 20,
+    titres: [{ nom:"Permis proportionnalité", medaille:["PERMIS","PROPORTION","× k"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu maîtrises la proportionnalité.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Situations", nom:"Fois plus, passage à l’unité", image:'<span class="ill-dec">3 → 6 €</span>', types:[FOIS_PLUS,UNITE,UNITE] },
+      { groupe:"Situations", nom:"Recettes et additions", image:'<span class="ill-dec">🥞 × 2</span>', types:[RECETTE,ADDITIVITE] },
+      { groupe:"Situations", nom:"Échelles", image:'<span class="ill-dec">1 cm → 5 km</span>', types:[ECHELLE] },
+      { groupe:"Tableaux", nom:"Compléter un tableau", image:'<span class="ill-dec">2 | 4 | ?</span>', types:[COMPLETER,COMPLETER,COEFFICIENT] },
+      { groupe:"Tableaux", nom:"Proportionnel ou pas ?", image:'<span class="ill-dec">Oui / Non</span>', types:[EST_PROP,PROP_OU_PAS] }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

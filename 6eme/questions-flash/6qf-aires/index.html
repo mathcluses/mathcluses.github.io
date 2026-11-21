@@ -8,27 +8,123 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Aires
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : AIRES
+  Parties : aire en carreaux (unité donnée), choisir l'unité, aire : quel calcul ? (rectangle, carré, triangle
+  rectangle, triangle, disque), aire : combien ? (environ pour le disque), conversions (tableau à remplir).
+  Titre : « Permis aires » (2 tests d'affilée à 17 / 20 ou plus).
+  Mode d'emploi : voir ../6qf-fractions/index.html.
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/nombres.js"></script>
+<script src="../commun/figures.js"></script>
+<script src="../commun/conversion.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Aires",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var O=FLASH.outils, N=NOMBRES, nb=O.nb, A=N.arrondi, U=["km²","hm²","dam²","m²","dm²","cm²","mm²"];
+
+  // ---------- Aire en carreaux ----------
+  // une forme faite de carreaux entiers (d'un seul tenant) et de quelques demi-carreaux (triangles) sur ses bords
+  function forme(h){
+    var W=7,H=5,cases={},liste=[],dep=[h.rnd(1,4),h.rnd(1,2)],n=h.rnd(5,13);
+    cases[dep]=1;liste.push(dep);
+    while(liste.length<n){var c=h.choix(liste),d=h.choix([[1,0],[-1,0],[0,1],[0,-1]]),x=c[0]+d[0],y=c[1]+d[1];
+      if(x>=0&&x<W&&y>=0&&y<H&&!cases[[x,y]]){cases[[x,y]]=1;liste.push([x,y])}}
+    var demis=[],essais=0,nd=h.choix([0,0,1,2,2]);
+    while(demis.length<nd&&essais++<50){var c2=h.choix(liste),d2=h.choix([[1,0],[-1,0],[0,1],[0,-1]]),x2=c2[0]+d2[0],y2=c2[1]+d2[1];
+      if(x2>=0&&x2<W&&y2>=0&&y2<H&&!cases[[x2,y2]]){cases[[x2,y2]]=2;   // demi-carreau : triangle collé au carreau voisin
+        var P=d2[0]===1?[[x2,y2],[x2,y2+1],[x2+1,y2+1]]:d2[0]===-1?[[x2+1,y2],[x2+1,y2+1],[x2,y2+1]]:d2[1]===1?[[x2,y2],[x2+1,y2],[x2,y2+1]]:[[x2,y2+1],[x2+1,y2+1],[x2+1,y2]];
+        demis.push(P)}}
+    var els=liste.map(function(c){return {carre:c}}).concat(demis.map(function(t){return {tri:t}}));
+    return {n:liste.length,d:demis.length,svg:FIG.dessin(W,H,els,{grille:true,px:30})};
+  }
+  var CARREAUX={ nom:"Aire en carreaux", gen:function(h){
+    var F=forme(h),aire=F.n+F.d/2,unite=h.choix(["u","u","cm"]);
+    if(unite==="cm")return {q:"Un carreau mesure 1 cm de côté. Quelle est l’aire de la figure coloriée (en cm²) ?"+F.svg,r:aire,pieges:[F.n+F.d,F.n,aire+1,aire*2],
+      correction:F.n+" carreaux entiers"+(F.d?" et "+F.d+" demi-carreau"+(F.d>1?"x":"")+" ("+nb(F.d/2)+" carreau"+(F.d>2?"x":"")+")":"")+" : "+nb(aire)+" cm² (un carreau = 1 cm²)."};
+    return {q:"L’unité d’aire est un carreau. Quelle est l’aire de la figure coloriée ?"+F.svg,r:aire,pieges:[F.n+F.d,F.n,aire+1,aire-1],
+      correction:F.n+" carreaux entiers"+(F.d?" + "+F.d+" demi-carreau"+(F.d>1?"x":"")+" = "+nb(F.d/2)+" carreau"+(F.d>2?"x":""):"")+" : "+nb(aire)+" unités."};
+  }};
+  var UNITES=[["la surface d’un timbre","cm²"],["la surface d’une feuille de cahier","cm²"],["la surface d’une salle de classe","m²"],["la surface d’un terrain de football","m²"],
+              ["la surface d’un pays","km²"],["la surface d’une forêt","km²"],["la surface d’un écran de téléphone","cm²"],["la surface d’un appartement","m²"],["la surface d’une tête d’épingle","mm²"]];
+  var UNITE={ nom:"Choisir l’unité", gen:function(h){
+    var u=h.choix(UNITES);
+    return {q:"Quelle unité choisir pour mesurer "+u[0]+" ?",choix:["mm²","cm²","m²","km²","cm","m"],r:u[1],
+            correction:"Une aire se mesure en unités « carrées » (cm², m²…). Pour "+u[0]+" : le "+u[1]+"."};
+  }};
+
+  // ---------- Formules ----------
+  function figure(h){
+    var t=h.choix(["rectangle","carre","trirect","triangle","disque"]);
+    if(t==="rectangle"){var L=h.rnd(3,12),l=h.rnd(2,L-1),k=5.5/L,P=[[0,0],[L*k,0],[L*k,l*k],[0,l*k]];
+      return {nom:"ce rectangle",aire:L*l,svg:FIG.dessin(5.5,l*k,[{poly:P,plein:1},{droit:[P[0],P[1],P[3]]},{droit:[P[2],P[1],P[3]]},{cote:[P[0],P[1]],t:L+" cm",centre:[2.7,1]},{cote:[P[1],P[2]],t:l+" cm",centre:[2.7,1]}],{px:34}),
+        bons:[L+" × "+l,l+" × "+L],faux:["2 × ("+L+" + "+l+")",L+" + "+l,L+" × "+l+" ÷ 2",L+" × "+L,"4 × "+L,L+" × "+l+" × 2"]}}
+    if(t==="carre"){var c=h.rnd(2,12),Q=[[0,0],[3.6,0],[3.6,3.6],[0,3.6]];
+      return {nom:"ce carré",aire:c*c,svg:FIG.dessin(3.6,3.6,[{poly:Q,plein:1},{droit:[Q[0],Q[1],Q[3]]},{egal:[Q[0],Q[1]]},{egal:[Q[1],Q[2]]},{egal:[Q[2],Q[3]]},{egal:[Q[3],Q[0]]},{cote:[Q[0],Q[1]],t:c+" cm",centre:[1.8,1.8]}],{px:34}),
+        bons:[c+" × "+c],faux:["4 × "+c,"2 × "+c,c+" + "+c,c+" × "+c+" ÷ 2",c+" × 4 × "+c]}}
+    if(t==="trirect"){var a=h.rnd(3,12),b=h.rnd(2,10),T=[[0,3.6],[5,3.6],[0,0]];
+      return {nom:"ce triangle rectangle",aire:a*b/2,svg:FIG.dessin(5,3.6,[{poly:T,plein:1},{droit:[T[0],T[1],T[2]]},{cote:[T[0],T[1]],t:a+" cm",centre:[1.5,1.8]},{cote:[T[0],T[2]],t:b+" cm",centre:[1.5,1.8]}],{px:34}),
+        bons:[a+" × "+b+" ÷ 2","("+a+" × "+b+") ÷ 2",b+" × "+a+" ÷ 2"],faux:[a+" × "+b,a+" + "+b,a+" × "+b+" × 2","("+a+" + "+b+") ÷ 2",a+" × "+a+" ÷ 2"]}}
+    if(t==="triangle"){var base=h.rnd(4,14),haut=h.rnd(2,9),S=[[0,3.4],[5.4,3.4],[h.rnd(10,44)/10,0]],H0=[S[2][0],3.4];
+      return {nom:"ce triangle",aire:base*haut/2,svg:FIG.dessin(5.4,3.4,[{poly:S,plein:1},{seg:[S[2],H0],cls:"fg-pointille"},{droit:[H0,S[1],S[2]]},
+        {cote:[S[0],S[1]],t:base+" cm",centre:[2.7,1]},{texte:[S[2][0]+.75,2],t:haut+" cm"}],{px:34}),
+        bons:[base+" × "+haut+" ÷ 2","("+base+" × "+haut+") ÷ 2",haut+" × "+base+" ÷ 2"],faux:[base+" × "+haut,base+" + "+haut,"("+base+" + "+haut+") ÷ 2",base+" × "+haut+" × 2"]}}
+    var r=h.rnd(2,10),C=[2,2];
+    return {nom:"ce disque",aire:Math.PI*r*r,environ:true,r:r,svg:FIG.dessin(4,4,[{disque:[C,1.9]},{point:C,nom:"O",pos:"so"},{seg:[C,[3.9,2]]},{texte:[3,1.75],t:r+" cm"}],{px:34}),
+      bons:["π × "+r+" × "+r,r+" × "+r+" × π","π × "+r+"²"],faux:["2 × π × "+r,"π × "+(2*r),"π × "+r,r+" × "+r,"π × "+(2*r)+" × "+(2*r)]};
+  }
+  var AIRE_CALC={ nom:"Aire : quel calcul ?", gen:function(h){
+    var F=figure(h),bonne=h.choix(F.bons);
+    return {q:"Quel calcul donne l’aire de "+F.nom+" ?"+F.svg,large:true,choix:FIG.qcm(h,bonne,F.bons,F.faux),r:bonne,
+            autres:F.bons.filter(function(x){return x!==bonne}),
+            correction:"Aire de "+F.nom+" : "+bonne+(F.environ?" ≈ "+nb(Math.round(F.aire))+" cm².":" = "+nb(F.aire)+" cm².")};
+  }};
+  var AIRE_VAL={ nom:"Aire : combien ?", gen:function(h){
+    var F=figure(h),v=F.environ?Math.round(F.aire):F.aire;
+    return {q:(F.environ?"Environ combien":"Combien")+" mesure l’aire de "+F.nom+" (en cm²) ?"+(F.environ?" (π ≈ 3,14 ; arrondi à l’unité)":"")+F.svg,r:v,
+            pieges:F.environ?[Math.round(2*Math.PI*F.r),Math.round(Math.PI*4*F.r*F.r),Math.round(Math.PI*F.r),F.r*F.r]:[v*2,v/2,v+2,v+1],
+            correction:F.bons[0]+(F.environ?" ≈ ":" = ")+nb(v)+" cm²."};
+  }};
+
+  // ---------- Conversions ----------
+  function conversion(h){
+    var i,j,n,txt,v;
+    do{i=h.rnd(1,6);j=h.rnd(Math.max(1,i-2),Math.min(6,i+2));n=N.nombre(h,h.rnd(1,2),h.rnd(0,2));txt=n.e+(n.d?","+n.d:"");v=CONVERSION.convertir(txt,2*(j-i))}
+    while(i===j||v>=1000000||v<.0001);
+    return {de:U[i],vers:U[j],txt:txt,v:v,i:i,j:j};
+  }
+  var CONV_TETE={ nom:"Convertir une aire de tête", gen:function(h){
+    var c=conversion(h);
+    return {q:c.txt+" "+c.de+" = … "+c.vers,r:c.v,pieges:[CONVERSION.convertir(c.txt,c.j-c.i),CONVERSION.convertir(c.txt,3*(c.j-c.i)),CONVERSION.convertir(c.txt,2*(c.i-c.j))],
+            correction:"Pour les aires, il y a 2 colonnes par unité : 1 "+U[Math.min(c.i,c.j)]+" = 100 "+U[Math.min(c.i,c.j)+1]+". "+c.txt+" "+c.de+" = "+nb(c.v)+" "+c.vers+"."};
+  }};
+  var CONV_TABLEAU={ nom:"Tableau de conversion (aires)", gen:function(h){
+    var c=conversion(h);
+    return {q:"Convertis : "+O.nw(c.txt+" "+c.de+" = … "+c.vers),r:nb(c.v)+" "+c.vers,widget:CONVERSION.widget("aire",c.txt,c.de,c.vers),
+            correction:c.txt+" "+c.de+" = "+nb(c.v)+" "+c.vers+" (2 chiffres par unité)."};
+  }};
+
+  FLASH.chapitre({
+    titre: "Aires",
+    image: '<span class="ill-dec">cm²</span>',
+    nbQuestions: 10,
+    testAuto: false,
+    titres: [{ nom:"Permis aires", medaille:["PERMIS","AIRES","cm²"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu maîtrises les aires.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Mesurer une aire", nom:"Aire en carreaux", image:FIG.dessin(3,2,[{carre:[0,0]},{carre:[1,0]},{carre:[1,1]},{tri:[[2,0],[2,1],[3,1]]}],{grille:true}), types:[CARREAUX] },
+      { groupe:"Mesurer une aire", nom:"Choisir l’unité", image:'<span class="ill-dec">m² ou km² ?</span>', types:[UNITE] },
+      { groupe:"Formules", nom:"Aire : quel calcul ?", image:'<span class="ill-dec">L × l</span>', types:[AIRE_CALC] },
+      { groupe:"Formules", nom:"Aire : combien ?", image:'<span class="ill-dec">A = ?</span>', types:[AIRE_VAL] },
+      { groupe:"Convertir", nom:"Conversions de tête", image:'<span class="ill-dec">1 m² = 100 dm²</span>', types:[CONV_TETE] },
+      { groupe:"Convertir", nom:"Tableau de conversion", image:'<span class="ill-dec">m² | dm²</span>', nb:6, types:[CONV_TABLEAU] },
+      { groupe:"Test", nom:"Test : tout le chapitre", commeTest:true, nb:20, image:'<span class="ill-dec">cm²</span>',
+        types:[CARREAUX,CARREAUX,CARREAUX,UNITE,UNITE,AIRE_CALC,AIRE_CALC,AIRE_CALC,AIRE_CALC,AIRE_VAL,AIRE_VAL,AIRE_VAL,AIRE_VAL,CONV_TETE,CONV_TETE,CONV_TETE,CONV_TETE,CONV_TABLEAU,CARREAUX,AIRE_CALC] }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

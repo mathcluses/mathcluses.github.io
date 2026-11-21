@@ -8,27 +8,109 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Cercle
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : CERCLE
+  Parties : rayon, diamètre, corde ; cercle ou disque (définitions, sur / dans / hors) ; rayon ↔ diamètre ;
+  tracer au compas (centre et rayon, diamètre donné), placer un point à des distances données
+  (atelier de géométrie ../commun/geo.js). Titre : « Permis cercle » (2 tests d'affilée à 17 / 20 ou plus).
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/figures.js"></script>
+<script src="../commun/geo.js"></script>
+<script src="../commun/tuto.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Cercle",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var O=FLASH.outils, nb=O.nb, V=GEO.V;
+  function surCercle(c,r,deg){var t=deg*Math.PI/180;return [c[0]+r*Math.cos(t),c[1]-r*Math.sin(t)]}
+
+  // ---------- Vocabulaire ----------
+  var VOCAB={ nom:"Rayon, diamètre, corde", gen:function(h){
+    var C=[2.4,2.4],R=2,a=h.rnd(0,359),A=surCercle(C,R,a),t=h.choix(["rayon","diametre","corde"]),seg,noms;
+    if(t==="rayon"){seg=[C,A];noms="[OA]"}
+    if(t==="diametre"){seg=[A,surCercle(C,R,a+180)];noms="[AB]"}
+    if(t==="corde"){seg=[A,surCercle(C,R,a+h.rnd(50,130))];noms="[AB]"}
+    var els=[{cercle:[C,R]},{point:C,nom:"O",pos:"so"},{seg:seg,cls:"fg-bleu"},{point:seg[0],nom:t==="rayon"?"A":"A"}];
+    if(t!=="rayon")els.push({point:seg[1],nom:"B"});
+    var r={rayon:"un rayon",diametre:"un diamètre",corde:"une corde (pas un diamètre)"}[t];
+    return {q:"Pour ce cercle de centre O, le segment "+noms+" est…"+FIG.dessin(4.8,4.8,els,{px:34}),large:true,choix:["un rayon","un diamètre","une corde (pas un diamètre)","un arc de cercle"],r:r,
+            correction:{rayon:"Un rayon relie le centre à un point du cercle.",diametre:"Un diamètre relie deux points du cercle en passant par le centre.",
+                        corde:"Une corde relie deux points du cercle ; si elle passe par le centre, c’est un diamètre (ici non)."}[t]};
+  }};
+  var DEFINITIONS=[
+    ["Le cercle de centre O et de rayon 3 cm, c’est…","l’ensemble des points situés à 3 cm de O",["l’ensemble des points situés à 3 cm ou moins de O","l’ensemble des points situés à 6 cm de O","la surface à l’intérieur du cercle","un segment de 3 cm"]],
+    ["Le disque de centre O et de rayon 3 cm, c’est…","l’ensemble des points situés à 3 cm ou moins de O",["l’ensemble des points situés à 3 cm de O","l’ensemble des points situés à plus de 3 cm de O","seulement le bord","un segment de 6 cm"]],
+    ["Un rayon d’un cercle, c’est…","un segment qui relie le centre à un point du cercle",["un segment qui relie deux points du cercle","un segment qui passe par le centre et relie deux points du cercle","la moitié du disque","le centre du cercle"]],
+    ["Un diamètre d’un cercle, c’est…","une corde qui passe par le centre",["un segment qui relie le centre à un point du cercle","n’importe quelle corde","le tour du cercle","la moitié du rayon"]],
+    ["Le diamètre est…","deux fois plus long que le rayon",["deux fois plus court que le rayon","aussi long que le rayon","π fois plus long que le rayon","quatre fois plus long que le rayon"]]
+  ];
+  var DEFINITION={ nom:"Définitions", gen:function(h){
+    var d=h.choix(DEFINITIONS);
+    return {q:d[0],large:true,choix:h.melange([d[1]].concat(d[2])),r:d[1],correction:d[0].replace("…"," ")+d[1]+"."};
+  }};
+  var POSITION={ nom:"Sur le cercle, dans le disque ?", gen:function(h){
+    var r=h.rnd(2,8),cas=h.rnd(1,3),d=cas===1?r:cas===2?h.rnd(1,r*10-1)/10:h.rnd(r*10+1,r*10+30)/10;
+    var rep=["sur le cercle","à l’intérieur du disque, pas sur le cercle","à l’extérieur du disque"][cas-1];
+    return {q:"Le cercle (C) a pour centre O et pour rayon "+r+" cm. Le point M est tel que OM = "+nb(d)+" cm. Le point M est…",large:true,
+            choix:["sur le cercle","à l’intérieur du disque, pas sur le cercle","à l’extérieur du disque"],r:rep,
+            correction:"OM "+(cas===1?"=":cas===2?"&lt;":"&gt;")+" "+r+" cm (le rayon) : M est "+rep+"."};
+  }};
+  var RAYON_DIAMETRE={ nom:"Rayon et diamètre", gen:function(h){
+    var r=h.choix([h.rnd(2,15),h.rnd(5,95)/10]),versDiam=h.choix([true,false]);
+    return versDiam
+      ? {q:"Un cercle a un rayon de "+nb(r)+" cm. Quel est son diamètre (en cm) ?",r:2*r,pieges:[r/2,r+2,4*r],correction:"Diamètre = 2 × rayon = 2 × "+nb(r)+" = "+nb(2*r)+" cm."}
+      : {q:"Un cercle a un diamètre de "+nb(2*r)+" cm. Quel est son rayon (en cm) ?",r:r,pieges:[4*r,2*r+2,r*2/4],correction:"Rayon = diamètre ÷ 2 = "+nb(2*r)+" ÷ 2 = "+nb(r)+" cm."};
+  }};
+
+  // ---------- Tracer (atelier) ----------
+  var TRACER_CERCLE={ nom:"Tracer un cercle (centre et rayon)", gen:function(h){
+    var r=h.choix([1.5,2,2.5,3,3.5]),O0=[h.rnd(35,65)/10,h.rnd(33,42)/10];
+    return {q:"Trace le cercle de centre O et de rayon <b>"+nb(r)+" cm</b>.",r:"cercle tracé",
+            widget:GEO.tache({tuto:"cercle",donnees:{points:{O:O0}},outils:["regle","compas"],
+              aide:"Prends le compas, règle l’écartement sur "+nb(r)+" cm, puis touche le point O : le compas trace le cercle.",
+              verifier:function(e,G){return G.cercle(e,O0,r)},corrige:{cercles:[[O0,r]]}}),
+            correction:"Pointe du compas sur O, écartement "+nb(r)+" cm."};
+  }};
+  var CERCLE_DIAMETRE={ nom:"Tracer le cercle de diamètre [AB]", gen:function(h){
+    var L=h.choix([4,5,6]),a=h.rnd(-25,25)*Math.PI/180,A=[5-L/2*Math.cos(a),3.6+L/2*Math.sin(a)],B=[5+L/2*Math.cos(a),3.6-L/2*Math.sin(a)],M=V.mul(V.add(A,B),.5);
+    return {q:"Trace le cercle de diamètre [AB].",r:"cercle tracé",
+            widget:GEO.tache({tuto:"cercle-diametre",donnees:{points:{A:A,B:B},segments:[["A","B"]]},outils:["regle","compas","point"],placer:["M"],
+              aide:"Mesure [AB] à la règle et place son milieu M (outil Point). Le centre est M, le rayon est la moitié de AB.",
+              verifier:function(e,G){return G.cercle(e,M,L/2)},corrige:{cercles:[[M,L/2]],points:{M:M}}}),
+            correction:"AB = "+L+" cm : le centre est le milieu M de [AB] et le rayon mesure "+nb(L/2)+" cm."};
+  }};
+  var DEUX_DISTANCES={ nom:"Placer un point à des distances données", gen:function(h){
+    var L=h.choix([4,5,6]),A=[5-L/2,4.4],B=[5+L/2,4.4],x,y,sols;
+    var px,py;
+    do{x=h.rnd(25,50)/10;y=h.rnd(25,50)/10;px=(x*x-y*y+L*L)/(2*L);py=Math.sqrt(Math.max(0,x*x-px*px))}
+    while(x+y<=L+.6||Math.abs(x-y)>=L-.6||py>3.8||py<1.2);   // C dans la figure (au-dessus de [AB])
+    sols=[[A[0]+px,4.4-py],[A[0]+px,4.4+py]];
+    return {q:"Place un point C tel que <b>AC = "+nb(x)+" cm</b> et <b>BC = "+nb(y)+" cm</b>.",r:"point placé",
+            widget:GEO.tache({compas:{mode:"arcs",vers:sols},tuto:"triangle-compas",donnees:{points:{A:A,B:B}},outils:["regle","compas","point"],placer:["C"],
+              aide:"Trace un arc de centre A et de rayon "+nb(x)+" cm, puis un arc de centre B et de rayon "+nb(y)+" cm : C est à leur intersection.",
+              verifier:function(e,G){return Math.min(G.point(e,sols[0],"C"),G.point(e,sols[1],"C"))},corrige:{points:{C:sols[0]},cercles:[[A,x],[B,y]]}}),
+            correction:"C est sur le cercle de centre A de rayon "+nb(x)+" cm et sur le cercle de centre B de rayon "+nb(y)+" cm (2 positions possibles)."};
+  }};
+
+  FLASH.chapitre({
+    titre: "Cercle",
+    image: FIG.dessin(2,2,[{cercle:[[1,1],.9]},{seg:[[1,1],[1.9,1]]}],{px:22}),
+    nbQuestions: 10,
+    testAuto: false,
+    titres: [{ nom:"Permis cercle", medaille:["PERMIS","CERCLE","◯"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu maîtrises le cercle et le compas.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Vocabulaire", nom:"Rayon, diamètre, corde", image:'<span class="ill-dec">[OA]</span>', types:[VOCAB] },
+      { groupe:"Vocabulaire", nom:"Cercle ou disque ?", image:'<span class="ill-dec">◯ ⬤</span>', types:[DEFINITION,POSITION] },
+      { groupe:"Vocabulaire", nom:"Rayon et diamètre", image:'<span class="ill-dec">d = 2 × r</span>', types:[RAYON_DIAMETRE] },
+      { groupe:"Tracer au compas", nom:"Tracer un cercle", tutos:["compas","cercle","cercle-diametre"], image:'<span class="ill-dec">◯ 3 cm</span>', nb:5, types:[TRACER_CERCLE,CERCLE_DIAMETRE] },
+      { groupe:"Tracer au compas", nom:"Placer un point au compas", tutos:["triangle-compas"], affiche:"Placer un point à des distances données", image:'<span class="ill-dec">AC = 4</span>', nb:5, types:[DEUX_DISTANCES] },
+      { groupe:"Test", nom:"Test : tout le chapitre", commeTest:true, nb:20, image:'<span class="ill-dec">◯</span>',
+        types:[VOCAB,VOCAB,VOCAB,VOCAB,DEFINITION,DEFINITION,DEFINITION,DEFINITION,POSITION,POSITION,POSITION,RAYON_DIAMETRE,RAYON_DIAMETRE,RAYON_DIAMETRE,VOCAB,DEFINITION,POSITION,TRACER_CERCLE,CERCLE_DIAMETRE,DEUX_DISTANCES] }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

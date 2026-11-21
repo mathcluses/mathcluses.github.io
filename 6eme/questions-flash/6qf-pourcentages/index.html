@@ -8,27 +8,86 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Pourcentages
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : POURCENTAGES
+  Parties : pourcentages de tête (50 %, 25 %, 75 %, 10 %, 20 %, 1 %), calculer un pourcentage (en passant par 10 %),
+  différentes écritures (25 % = 1/4 = 0,25, pourcentage colorié), situations (soldes, classes…).
+  Titre : « Permis pourcentages » (2 tests du chapitre d'affilée à 17 / 20 ou plus).
+  Mode d'emploi : voir ../6qf-fractions/index.html.
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/nombres.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Pourcentages",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var O=FLASH.outils, F=O.frac, N=NOMBRES, nb=O.nb, A=N.arrondi;
+  // pourcentages « de tête » et la façon de les calculer
+  var SIMPLES={50:"la moitié : on divise par 2",25:"le quart : on divise par 4",75:"trois quarts : le quart, fois 3",
+               10:"un dixième : on divise par 10",20:"deux fois 10 %",1:"un centième : on divise par 100"};
+  function multipleDe(h,p){var m=p===75||p===25?4:p===50?2:p===1?100:10;return m*h.rnd(2,p===1?9:30)}
+
+  var DE_TETE={ nom:"Pourcentages de tête", gen:function(h){
+    var p=h.choix([50,25,75,10,20,1]),x=multipleDe(h,p),r=A(x*p/100);
+    return {q:p+" % de "+nb(x)+" = ?",r:r,pieges:[A(x/p),A(x-p),A(x*p/10),A(x/(p===50?4:2))],correction:p+" % de "+nb(x)+", c’est "+SIMPLES[p]+" : "+nb(r)+"."};
+  }};
+  var CALCULER={ nom:"Calculer un pourcentage", gen:function(h){
+    var p=h.choix([30,40,60,70,80,90,5,15]),x=h.rnd(2,30)*(p%10?20:10),dix=A(x/10),r=A(x*p/100);
+    var via="10 % de "+nb(x)+" = "+nb(dix)+(p===5?" ; 5 %, c’est la moitié : "+nb(r)
+            :p===15?" ; 5 % = "+nb(A(dix/2))+" ; donc 15 % = "+nb(dix)+" + "+nb(A(dix/2))+" = "+nb(r)
+            :", donc "+p+" % = "+(p/10)+" × "+nb(dix)+" = "+nb(r));
+    return {q:p+" % de "+nb(x)+" = ?",r:r,pieges:[A(x-p),A(dix*(p/10+1)),A(x/p),A(r*10)],correction:via+"."};
+  }};
+  var ECRITURES={ nom:"Différentes écritures", gen:function(h){
+    var u=h.choix([[50,1,2],[25,1,4],[75,3,4],[10,1,10],[20,1,5],[1,1,100],[30,3,10],[40,2,5]]),p=u[0],sens=h.rnd(1,3);
+    if(sens===1){
+      var bonne=F(u[1],u[2]),f=[F(1,p),F(p,10),F(u[2],u[1]),F(p,1000),F(u[1]+1,u[2]),F(1,u[2]+1)].map(function(t,i){return [t,i+1]});
+      return {q:p+" % = ? (en fraction)",choix:N.propositions(h,[bonne,0],f,false,false,6),r:bonne,correction:p+" % = "+F(p,100)+" = "+bonne+"."};
+    }
+    if(sens===2)return {q:p+" % = ? (en nombre décimal)",r:A(p/100),pieges:[A(p/10),p,A(p/1000)],correction:p+" % = "+F(p,100)+" = "+nb(A(p/100))+"."};
+    var autres=[1,5,10,20,25,30,40,50,75,100,u[2],u[1]*10].map(function(x){return [x+" %",x]});
+    return {q:F(u[1],u[2])+" = … %",choix:N.propositions(h,[p+" %",p],autres,true),r:p+" %",correction:F(u[1],u[2])+" = "+F(p,100)+" = "+p+" %."};
+  }};
+  var COLORIE={ nom:"Pourcentage colorié", gen:function(h){
+    var n=h.choix([2,4,5,10,10,20]),k=h.rnd(1,n-1),p=A(k*100/n);
+    var choix=[5,10,20,25,30,40,50,60,70,75,80,90].filter(function(x){return x!==p});
+    choix=[p].concat(h.melange(choix).slice(0,5)).sort(function(a,b){return a-b}).map(function(x){return x+" %"});
+    return {q:"Quel pourcentage de la bande est colorié ?"+O.bande(n,k),choix:choix,r:p+" %",
+            correction:k+" parts sur "+n+" : "+F(k,n)+" = "+F(p,100)+" = "+p+" %."};
+  }};
+  var SITUATIONS={ nom:"Situations", gen:function(h){
+    switch(h.rnd(1,4)){
+      case 1: var prix=h.rnd(2,15)*10,p=h.choix([10,20,25,50,30]),red=A(prix*p/100);
+        return {q:"Un pull coûte "+prix+" €. Il est soldé de "+p+" %. Quel est le montant de la réduction (en €) ?",r:red,pieges:[p,A(prix-red),A(prix/p)],
+                correction:p+" % de "+prix+" € = "+nb(red)+" €. (Le nouveau prix serait "+nb(A(prix-red))+" €.)"};
+      case 2: var prix2=h.rnd(2,15)*10,p2=h.choix([10,20,25,50]),r2=A(prix2*(100-p2)/100);
+        return {q:"Un jeu coûte "+prix2+" €. Il est soldé de "+p2+" %. Quel est son nouveau prix (en €) ?",r:r2,pieges:[A(prix2*p2/100),prix2-p2,A(prix2+prix2*p2/100)],
+                correction:"Réduction : "+p2+" % de "+prix2+" € = "+nb(A(prix2*p2/100))+" €. Nouveau prix : "+prix2+" − "+nb(A(prix2*p2/100))+" = "+nb(r2)+" €."};
+      case 3: var el=h.choix([20,25,30]),p3=h.choix(el===25?[20,40,60,80]:el===20?[10,20,25,50,75]:[10,20,50,60]),f=A(el*p3/100);
+        return {q:"Dans une classe de "+el+" élèves, "+p3+" % sont des demi-pensionnaires. Combien d’élèves cela fait-il ?",r:f,pieges:[p3,A(el-f),A(el/p3*10)],
+                correction:p3+" % de "+el+" = "+nb(f)+" élèves."};
+      default: var tot=h.choix([20,25,50,200]),part=h.rnd(1,tot===200?9:4)*(tot/(tot===200?10:5)),p4=A(part*100/tot);
+        var autres=[5,10,15,20,25,30,40,50,60,70,75,80,90,part].map(function(x){return [x+" %",x]});
+        return {q:"Sur "+tot+" élèves, "+part+" viennent à vélo. Quel pourcentage cela représente-t-il ?",choix:N.propositions(h,[p4+" %",p4],autres,true,false,6),
+                r:p4+" %",correction:F(part,tot)+" = "+F(p4,100)+" = "+p4+" %."};
+    }
+  }};
+
+  FLASH.chapitre({
+    titre: "Pourcentages",
+    image: '<span class="ill-dec">25 %</span>',
+    nbQuestions: 10,
+    nbTest: 20,
+    titres: [{ nom:"Permis pourcentages", medaille:["PERMIS","POURCENTAGES","%"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu maîtrises les pourcentages.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Calculer", nom:"Pourcentages de tête", image:'<span class="ill-dec">50 % = ½</span>', types:[DE_TETE] },
+      { groupe:"Calculer", nom:"Calculer un pourcentage", image:'<span class="ill-dec">30 % de 70</span>', types:[CALCULER] },
+      { groupe:"Comprendre", nom:"Différentes écritures", image:'<span class="ill-dec">25 % = 0,25</span>', types:[ECRITURES,ECRITURES,COLORIE] },
+      { groupe:"Comprendre", nom:"Situations", image:'<span class="ill-dec">−20 %</span>', types:[SITUATIONS] }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

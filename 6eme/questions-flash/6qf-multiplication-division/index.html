@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>6e · Questions flash : Multiplication et division</title>
+<link rel="stylesheet" href="../commun/flash.css">
+</head>
+<body>
+<!--
+  QUESTIONS FLASH 6e : MULTIPLICATION ET DIVISION
+  Une catégorie par opération : Multiplication, Division euclidienne, Division décimale, chacune avec son test et son permis.
+  Parties « de tête » : QCM. Parties « à poser » : l'élève POSE l'opération sur le site (../commun/poser.js) :
+  l'opération est déjà disposée, il remplit les cases (retenues et lignes intermédiaires en brouillon),
+  seul le résultat est corrigé.
+  Les tests (20 questions) ne prennent que quelques opérations à poser, pour rester assez courts.
+  Permis : 2 tests réussis d'affilée à 17 / 20 ou plus. « Maître du calcul » = les 4 permis des deux chapitres
+  de calcul (Addition et soustraction, Multiplication et division).
+  Les décimaux sont fabriqués en entiers (centièmes, millièmes) puis divisés : pas d'erreur d'arrondi.
+  Mode d'emploi général d'un type de questions : voir ../6qf-fractions/index.html.
+-->
+<main id="flash"></main>
+<script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/nombres.js"></script>
+<script src="../commun/poser.js"></script>
+<script>
+(function(){
+  var O=FLASH.outils, N=NOMBRES, nb=O.nb, A=N.arrondi;
+  var POSE="Pose et calcule : ";
+
+  // ---------- Outils ----------
+  // décimal au hasard entre min et max, avec d chiffres après la virgule (le dernier non nul)
+  function dec(h,min,max,d){
+    var p=Math.pow(10,d),n;
+    do{n=h.rnd(min*p,max*p)}while(n%10===0);
+    return n/p;
+  }
+  function nbDec(x){var s=String(A(x)).split(".");return s[1]?s[1].length:0}
+  // addition chiffre par chiffre sans retenue (erreur typique) ; soustraction « le plus petit chiffre ôté du plus grand »
+  function sansRetenue(a,b,plus){
+    var s1=String(a),s2=String(b),L=Math.max(s1.length,s2.length),r="";
+    s1=s1.padStart(L,"0");s2=s2.padStart(L,"0");
+    for(var i=0;i<L;i++){var x=Number(s1[i]),y=Number(s2[i]);r+=plus?(x+y)%10:Math.abs(x-y)}
+    return Number(r);
+  }
+  // le même calcul en entiers « sans virgule » (centièmes…) : pour les erreurs sur les décimaux
+  function enEntiers(a,b){var d=Math.max(nbDec(a),nbDec(b)),p=Math.pow(10,d);return {a:Math.round(a*p),b:Math.round(b*p),p:p}}
+  // virgules mal alignées : les derniers chiffres sont mis l'un sous l'autre
+  function malAligne(a,b,plus){
+    var da=nbDec(a),db=nbDec(b),d=Math.max(da,db),ia=Math.round(a*Math.pow(10,da)),ib=Math.round(b*Math.pow(10,db));
+    return (plus?ia+ib:ia-ib)/Math.pow(10,d);
+  }
+  // un chiffre 0 enlevé (zéro oublié au quotient : 206 → 26)
+  function sansZero(x){var s=String(A(x)),i=s.search(/[1-9.]0/);return i<0?null:Number(s.slice(0,i+1)+s.slice(i+2))}
+  function qr(q,r){return "q = "+nb(q)+" ; r = "+nb(r)}
+
+  // ======================================================================
+  // MULTIPLICATION
+  var TABLES={ nom:"Tables de multiplication", gen:function(h){
+    var a=h.rnd(2,9),b=h.rnd(3,9);
+    return {q:a+" × "+b+" = ?",r:a*b,pieges:[a*b+a,a*b-a,a*b+b,a+b],correction:a+" × "+b+" = "+(a*b)+"."};
+  }};
+  var MULT_TETE={ nom:"Multiplier de tête", gen:function(h){
+    switch(h.rnd(1,3)){
+      case 1: var a=h.rnd(12,49),b=h.rnd(2,6);
+        return {q:a+" × "+b+" = ?",r:a*b,pieges:[(a-a%10)*b+a%10,a*b+10,a*b-b],correction:a+" × "+b+" = "+(a-a%10)+" × "+b+" + "+(a%10)+" × "+b+" = "+(a*b)+"."};
+      case 2: var c=h.choix([25,50]),k=h.choix([4,8,12,6,16]);
+        return {q:c+" × "+k+" = ?",r:c*k,pieges:[c*k/2,c*k*2,c*k+c],correction:(c===25?"25 × 4 = 100":"50 × 2 = 100")+", donc "+c+" × "+k+" = "+(c*k)+"."};
+      default: var x=h.rnd(2,9),y=h.choix([20,30,40,50,200,300]);
+        return {q:x+" × "+y+" = ?",r:x*y,pieges:[x*y/10,x*y*10,x*y+y],correction:x+" × "+(y/(y>=100?100:10))+" = "+(x*y/(y>=100?100:10))+", puis × "+(y>=100?100:10)+" : "+nb(x*y)+"."};
+    }
+  }};
+  var MULT_DEC_TETE={ nom:"Multiplier des décimaux de tête", gen:function(h){
+    switch(h.rnd(1,3)){
+      case 1: var a=dec(h,0,9,1),b=h.rnd(2,9);
+        return {q:nb(a)+" × "+b+" = ?",r:A(a*b),pieges:[A(a*b*10),A(a*b/10),A(a*b+b)],correction:Math.round(a*10)+" dixièmes × "+b+" = "+Math.round(a*10*b)+" dixièmes = "+nb(A(a*b))+"."};
+      case 2: var x=h.rnd(1,9),y=h.rnd(2,9);
+        return {q:"0,"+x+" × 0,"+y+" = ?",r:A(x*y/100),pieges:[A(x*y/10),x*y,A(x*y/1000)],correction:x+" dixièmes × "+y+" dixièmes = "+(x*y)+" centièmes = "+nb(A(x*y/100))+"."};
+      default: var c=h.choix([.5,2.5,.25,1.5]),k=h.choix([2,4,6,8]);
+        return {q:nb(c)+" × "+k+" = ?",r:A(c*k),pieges:[A(c*k*10),A(c*k/10),A(c*k+1)],correction:nb(c)+" × "+k+" = "+nb(A(c*k))+"."};
+    }
+  }};
+  var POSE_MULT_ENT={ nom:"Poser une multiplication (entiers)", gen:function(h){
+    var a=h.rnd(102,989),b=h.rnd(12,98),r=a*b,u=b%10,d=Math.floor(b/10);
+    return {q:POSE+a+" × "+b,r:nb(r),widget:POSER.multiplication(a,b),
+            correction:a+" × "+u+" = "+nb(a*u)+" et "+a+" × "+(d*10)+" = "+nb(a*d*10)+" (on décale d’un rang) : "+nb(a*u)+" + "+nb(a*d*10)+" = "+nb(r)+"."};
+  }};
+  var POSE_MULT_DEC={ nom:"Poser une multiplication (décimaux)", gen:function(h){
+    var a=dec(h,1,60,h.rnd(1,2)),b=h.choix([dec(h,1,9,1),h.rnd(12,48)]),da=nbDec(a),db=nbDec(b);
+    var ia=Math.round(a*Math.pow(10,da)),ib=Math.round(b*Math.pow(10,db)),p=Math.pow(10,da+db),r=ia*ib/p;
+    var u=ib%10,dz=Math.floor(ib/10);
+    return {q:POSE+nb(a)+" × "+nb(b),r:nb(r),widget:POSER.multiplication(a,b),
+            correction:"On calcule "+nb(ia)+" × "+nb(ib)+" = "+nb(ia*ib)+" ; il y a "+(da+db)+" chiffre"+(da+db>1?"s":"")+" après la virgule en tout : "+nb(r)+"."};
+  }};
+
+  // ======================================================================
+  // DIVISION EUCLIDIENNE
+  function propositionsQR(h,b,q,r,extra){
+    var f=[[q-1,r+b],[q+1,r],[q,r+1],[q-1,r],[q,b-r],[r,q],[q+1,Math.max(0,r-1)]].concat(extra||[])
+      .filter(function(x){return x[0]>=0&&x[1]>=0}).map(function(x){return [qr(x[0],x[1]),x[0]*1000+x[1]]});
+    return N.propositions(h,[qr(q,r),q*1000+r],f,false,false,6);
+  }
+  var EUC_TETE={ nom:"Division euclidienne de tête", gen:function(h){
+    var b=h.rnd(2,9),q=h.rnd(2,12),r=h.rnd(1,b-1),a=b*q+r;
+    return {q:"Division euclidienne de "+a+" par "+b+" : quotient q et reste r ?",large:true,choix:propositionsQR(h,b,q,r),r:qr(q,r),
+            correction:a+" = "+b+" × "+q+" + "+r+", et "+r+" < "+b+" : q = "+q+", r = "+r+"."};
+  }};
+  var EUC_POSE={ nom:"Poser une division euclidienne", gen:function(h){
+    var b=h.choix([h.rnd(3,9),h.rnd(11,25)]),q=h.choix([h.rnd(102,409),h.rnd(1,9)*100+h.rnd(1,9)]),r=h.rnd(0,b-1),a=b*q+r,sz=sansZero(q);
+    return {q:POSE+"division euclidienne de "+nb(a)+" par "+b,r:qr(q,r),widget:POSER.euclidienne(a,b),
+            correction:nb(a)+" = "+b+" × "+q+" + "+r+(sz?". Attention au 0 du quotient !":" (le reste est plus petit que "+b+").")};
+  }};
+  var EUC_EGALITE={ nom:"L’égalité de la division euclidienne", gen:function(h){
+    var b=h.rnd(3,12),q=h.rnd(3,15),r=h.rnd(1,b-1),a=b*q+r;
+    var bonne=a+" = "+b+" × "+q+" + "+r;
+    var f=[a+" = "+b+" × "+(q-1)+" + "+(r+b),a+" = "+b+" × "+(q+1)+" − "+(b-r),a+" = "+b+" × "+q+" + "+(r+1),
+           b+" = "+a+" × "+q+" + "+r,a+" = "+b+" × "+r+" + "+q,(a+1)+" = "+b+" × "+q+" + "+r].map(function(t,i){return [t,i+1]});
+    return {q:"Quelle égalité traduit la division euclidienne de "+a+" par "+b+" ?",large:true,choix:N.propositions(h,[bonne,0],f,false,false,6),r:bonne,
+            correction:"Dividende = diviseur × quotient + reste, avec un reste plus petit que le diviseur : "+bonne+"."};
+  }};
+  var EUC_RESTE={ nom:"Quotient ou reste ?", gen:function(h){
+    var b=h.rnd(3,9),q=h.rnd(5,30),r=h.rnd(0,b-1),a=b*q+r,quot=h.choix([true,false]);
+    return quot
+      ? {q:"Quel est le <b>quotient</b> de la division euclidienne de "+a+" par "+b+" ?",r:q,pieges:[q+1,q-1,r,a-b],correction:b+" × "+q+" = "+(b*q)+" ≤ "+a+" < "+b+" × "+(q+1)+" : le quotient est "+q+"."}
+      : {q:"Quel est le <b>reste</b> de la division euclidienne de "+a+" par "+b+" ?",r:r,pieges:[q,r+b,b-r,r+1],correction:a+" = "+b+" × "+q+" + "+r+" : le reste est "+r+"."};
+  }};
+
+  // ======================================================================
+  // DIVISION DÉCIMALE
+  var DIVD_TETE={ nom:"Division décimale de tête", gen:function(h){
+    var b=h.choix([2,2,3,4,5]),q;
+    do{q=h.choix([dec(h,0,9,1),dec(h,0,3,2),h.rnd(1,9)+.5])}while(nbDec(A(q*b))>2);
+    var a=A(q*b);
+    return {q:nb(a)+" ÷ "+b+" = ?",r:A(q),pieges:[A(q*10),A(q/10),A(q+.5),A(q+1)],
+            correction:b+" × "+nb(A(q))+" = "+nb(a)+", donc "+nb(a)+" ÷ "+b+" = "+nb(A(q))+"."};
+  }};
+  var DIVD_POSE={ nom:"Poser une division décimale", gen:function(h){
+    var b,a,q;
+    if(h.choix([true,false])){b=h.choix([4,8,5,2]);do{a=h.rnd(21,999)}while(a%b===0)}         // entier ÷ 4 : le quotient tombe juste
+    else{b=h.rnd(3,9);q=dec(h,1,40,2);a=A(q*b)}                                              // décimal ÷ 3 à 9 : quotient au centième
+    q=A(a/b);
+    var qe=Math.floor(a/b),re=a-qe*b,sz=sansZero(q);
+    // erreur typique : le reste écrit comme partie décimale (127 ÷ 8 = 15 reste 7 → « 15,7 »)
+    var resteFaux=Number.isInteger(a)&&re>0?Number(qe+"."+re):A(q+1);
+    return {q:POSE+nb(a)+" ÷ "+b,r:nb(q),widget:POSER.decimale(a,b),
+            correction:"On continue après la virgule en ajoutant des zéros au dividende : "+nb(a)+" ÷ "+b+" = "+nb(q)+". (Le reste n’est pas la partie décimale !)"};
+  }};
+  var ARRONDI_QUOT={ nom:"Quotient arrondi au dixième", gen:function(h){
+    var b=h.choix([3,6,7,9,11]),a;
+    do{a=h.rnd(10,99)}while(a%b===0||Math.abs((a/b*100)%10-5)<.5);
+    var exact=a/b,r=Math.round(exact*10)/10,t=Math.floor(exact*10)/10;
+    return {q:"Arrondi au dixième de "+a+" ÷ "+b+" ?",r:r,pieges:[t===r?A(r+.1):t,Math.round(exact*100)/100,Math.round(exact)],
+            correction:a+" ÷ "+b+" ≈ "+nb(Math.floor(exact*100)/100)+"… : le chiffre des centièmes décide. Arrondi au dixième : "+nb(r)+"."};
+  }};
+
+  // ======================================================================
+  // Titre ultime commun aux deux chapitres de calcul (le même titre, affiché dans les deux)
+  var MAITRE={ nom:"Maître du calcul", chapitre:"Calcul 6e", medaille:["MAÎTRE DU","CALCUL","+×÷"],
+    requiert:[{chapitre:"Addition et soustraction",nom:"Permis addition"},{chapitre:"Multiplication et division",nom:"Permis multiplication"},
+              {chapitre:"Multiplication et division",nom:"Permis division euclidienne"},{chapitre:"Multiplication et division",nom:"Permis division décimale"}],
+    condition:"Obtiens les 4 permis de calcul :", bravo:"Tu maîtrises les 4 opérations !", tampon:"Validé" };
+  function permis(nom,haut,centre,groupe,partie){
+    return { nom:nom, groupe:groupe, medaille:[haut,"CALCUL",centre],
+             serie:{partie:partie,fois:2,minimum:17},
+             condition:"Réussis le test (20 questions) 2 fois d’affilée :", bravo:"Bravo, permis obtenu !", tampon:"Validé" };
+  }
+
+  var G2="Multiplication",G3="Division euclidienne",G4="Division décimale";
+  FLASH.chapitre({
+    titre: "Multiplication et division",
+    image: '<span class="ill-dec">× ÷</span>',
+    nbQuestions: 10,
+    testAuto: false,                                 // un test par opération (pas de test de tout le chapitre : trop long)
+    titres: [
+      permis("Permis multiplication","MULTIPLICATION","×",G2,"Test : multiplication"),
+      permis("Permis division euclidienne","DIVISION","r",G3,"Test : division euclidienne"),
+      permis("Permis division décimale","DIVISION","÷",G4,"Test : division décimale"),
+      MAITRE
+    ],
+    sections: [
+      { groupe:G2, nom:"Tables de multiplication", image:'<span class="ill-dec">7 × 8</span>', types:[TABLES] },
+      { groupe:G2, nom:"Multiplication de tête", image:'<span class="ill-dec">25 × 4</span>', types:[MULT_TETE] },
+      { groupe:G2, nom:"Décimaux de tête (×)", affiche:"Décimaux de tête", image:'<span class="ill-dec">0,3 × 0,2</span>', types:[MULT_DEC_TETE] },
+      { groupe:G2, nom:"À poser : entiers (×)", affiche:"À poser : entiers", image:'<span class="ill-dec">✎ 243 × 37</span>', nb:5, types:[POSE_MULT_ENT] },
+      { groupe:G2, nom:"À poser : décimaux (×)", affiche:"À poser : décimaux", image:'<span class="ill-dec">✎ 3,45 × 2,6</span>', nb:5, types:[POSE_MULT_DEC] },
+      { groupe:G2, nom:"Test : multiplication", commeTest:true, nb:20, image:'<span class="ill-dec">×</span>',
+        types:[TABLES,TABLES,TABLES,MULT_TETE,MULT_TETE,MULT_TETE,MULT_DEC_TETE,MULT_DEC_TETE,POSE_MULT_ENT,POSE_MULT_DEC] },
+
+      { groupe:G3, nom:"Division euclidienne de tête", affiche:"De tête", image:'<span class="ill-dec">47 = 6 × 7 + 5</span>', types:[EUC_TETE,EUC_RESTE] },
+      { groupe:G3, nom:"L’égalité de la division", image:'<span class="ill-dec">a = b × q + r</span>', types:[EUC_EGALITE] },
+      { groupe:G3, nom:"À poser : division euclidienne", affiche:"À poser", image:'<span class="ill-dec">✎ 1 236 ÷ 6</span>', nb:5, types:[EUC_POSE] },
+      { groupe:G3, nom:"Test : division euclidienne", commeTest:true, nb:20, image:'<span class="ill-dec">q ; r</span>',
+        types:[EUC_TETE,EUC_TETE,EUC_TETE,EUC_RESTE,EUC_RESTE,EUC_RESTE,EUC_EGALITE,EUC_EGALITE,EUC_EGALITE,EUC_POSE] },
+
+      { groupe:G4, nom:"Division décimale de tête", affiche:"De tête", image:'<span class="ill-dec">4,8 ÷ 2</span>', types:[DIVD_TETE] },
+      { groupe:G4, nom:"À poser : division décimale", affiche:"À poser", image:'<span class="ill-dec">✎ 127 ÷ 8</span>', nb:5, types:[DIVD_POSE] },
+      { groupe:G4, nom:"Quotient arrondi", affiche:"Arrondir un quotient", image:'<span class="ill-dec">10 ÷ 3 ≈ 3,3</span>', types:[ARRONDI_QUOT] },
+      { groupe:G4, nom:"Test : division décimale", commeTest:true, nb:20, image:'<span class="ill-dec">÷</span>',
+        types:[DIVD_TETE,DIVD_TETE,DIVD_TETE,DIVD_TETE,ARRONDI_QUOT,ARRONDI_QUOT,ARRONDI_QUOT,ARRONDI_QUOT,DIVD_POSE,DIVD_TETE] }
+    ]
+  });
+})();
+</script>
+</body>
+</html>

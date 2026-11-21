@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>6e · Questions flash : Triangles</title>
+<link rel="stylesheet" href="../commun/flash.css">
+</head>
+<body>
+<!--
+  QUESTIONS FLASH 6e : TRIANGLES
+  Parties : nature d'un triangle (figure codée, ou longueurs données), vocabulaire (sommet principal, base,
+  hypoténuse), construire (3 longueurs au compas, triangle rectangle à l'équerre, avec un angle au rapporteur,
+  triangle isocèle) dans l'atelier de géométrie ../commun/geo.js.
+  Titre : « Permis triangles » (2 tests d'affilée à 17 / 20 ou plus).
+-->
+<main id="flash"></main>
+<script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/figures.js"></script>
+<script src="../commun/geo.js"></script>
+<script src="../commun/tuto.js"></script>
+<script>
+(function(){
+  var O=FLASH.outils, nb=O.nb, V=GEO.V;
+  var NATURES=["quelconque","isocèle","équilatéral","rectangle","rectangle isocèle"];
+
+  // un triangle de la nature voulue (sommets A, B, C), mis à l'échelle dans un cadre 5 × 3,8, tourné au hasard
+  function triangle(h,nature){
+    var P;
+    if(nature==="équilatéral")P=[[0,0],[1,0],[.5,-Math.sqrt(3)/2]];
+    if(nature==="isocèle"){var t=h.choix([h.rnd(30,70),h.rnd(100,125)])*Math.PI/180;P=[[0,0],[Math.sin(t/2)*2,Math.cos(t/2)*0],[0,0]];
+      P=[[-Math.sin(t/2),0],[Math.sin(t/2),0],[0,-Math.cos(t/2)]]}
+    if(nature==="rectangle"){var a=1,b=h.choix([.55,.65,1.5,1.7]);P=[[0,0],[a,0],[0,-b]]}
+    if(nature==="rectangle isocèle")P=[[0,0],[1,0],[0,-1]];
+    if(nature==="quelconque"){var ok;do{P=[[0,0],[1,0],[h.rnd(10,80)/100,-h.rnd(35,90)/100]];ok=angleOk(P)}while(!ok)}
+    var rot=h.rnd(0,359);P=P.map(function(p){return V.rot(p,rot)});
+    var xs=P.map(function(p){return p[0]}),ys=P.map(function(p){return p[1]}),k=Math.min(5/(Math.max.apply(null,xs)-Math.min.apply(null,xs)),3.8/(Math.max.apply(null,ys)-Math.min.apply(null,ys)));
+    P=P.map(function(p){return [(p[0]-Math.min.apply(null,xs))*k,(p[1]-Math.min.apply(null,ys))*k]});
+    return P;
+  }
+  function angle(P,i){var a=V.sub(P[(i+1)%3],P[i]),b=V.sub(P[(i+2)%3],P[i]);return Math.acos(V.dot(a,b)/V.len(a)/V.len(b))*180/Math.PI}
+  function angleOk(P){var c=[V.dist(P[0],P[1]),V.dist(P[1],P[2]),V.dist(P[2],P[0])];
+    for(var i=0;i<3;i++){if(Math.abs(angle(P,i)-90)<12)return false;if(Math.abs(c[i]-c[(i+1)%3])<.15)return false}return true}
+  // figure codée : côtés égaux (traits) et angle droit
+  function figure(P,nature,noms){
+    var els=[{poly:P,plein:1}],c=[[0,1],[1,2],[2,0]],G=[(P[0][0]+P[1][0]+P[2][0])/3,(P[0][1]+P[1][1]+P[2][1])/3];
+    if(nature==="équilatéral")c.forEach(function(s){els.push({egal:[P[s[0]],P[s[1]]]})});
+    if(nature==="isocèle")els.push({egal:[P[0],P[2]]},{egal:[P[1],P[2]]});
+    if(nature==="rectangle isocèle")els.push({egal:[P[0],P[1]]},{egal:[P[0],P[2]]});
+    if(nature.indexOf("rectangle")===0)els.push({droit:[P[0],P[1],P[2]]});
+    (noms||["A","B","C"]).forEach(function(n,i){var d=V.unit(V.sub(P[i],G));els.push({texte:[P[i][0]+d[0]*.42,P[i][1]+d[1]*.42+.15],t:n,cls:"nom"})});
+    return FIG.dessin(5,3.8,els,{px:34});
+  }
+  var NATURE_FIG={ nom:"Nature d’un triangle (figure codée)", gen:function(h){
+    var n=h.choix(NATURES),P=triangle(h,n);
+    return {q:"Quelle est la nature de ce triangle ? (Regarde les codages.)"+figure(P,n),choix:NATURES,r:n,
+            correction:{quelconque:"Aucun codage : le triangle est quelconque.",isocèle:"Deux côtés de même longueur (même codage) : isocèle.",
+              équilatéral:"Trois côtés de même longueur : équilatéral.",rectangle:"Un angle droit : rectangle.","rectangle isocèle":"Un angle droit et deux côtés égaux : rectangle isocèle."}[n]};
+  }};
+  var NATURE_LONG={ nom:"Nature d’un triangle (longueurs)", gen:function(h){
+    var n=h.choix(["quelconque","isocèle","équilatéral","isocèle"]),a,b,c;
+    if(n==="équilatéral"){a=b=c=h.rnd(3,9)}
+    if(n==="isocèle"){a=b=h.rnd(4,9);do{c=h.rnd(2,2*a-1)}while(c===a)}
+    if(n==="quelconque"){do{a=h.rnd(3,9);b=h.rnd(3,9);c=h.rnd(Math.abs(a-b)+1,a+b-1)}while(a===b||b===c||a===c||a*a+b*b===c*c||a*a+c*c===b*b||b*b+c*c===a*a)}
+    var L=h.melange([["AB",a],["AC",b],["BC",c]]);
+    return {q:"Le triangle ABC a pour côtés "+L.map(function(x){return x[0]+" = "+x[1]+" cm"}).join(", ")+". Il est…",choix:["quelconque","isocèle","équilatéral"],r:n,
+            correction:n==="équilatéral"?"Les 3 côtés ont la même longueur.":n==="isocèle"?"Deux côtés ont la même longueur.":"Les 3 côtés ont des longueurs différentes."};
+  }};
+  var VOCAB={ nom:"Sommet principal, base, hypoténuse", gen:function(h){
+    var noms=h.melange(["A","B","C"]);
+    if(h.choix([true,false])){var P=triangle(h,"isocèle");   // P[2] est le sommet principal
+      var base="["+[noms[0],noms[1]].sort().join("")+"]",sommet=noms[2],surSommet=h.choix([true,false]);
+      var segs=["["+[noms[0],noms[1]].sort().join("")+"]","["+[noms[1],noms[2]].sort().join("")+"]","["+[noms[0],noms[2]].sort().join("")+"]"];
+      return surSommet?{q:"Ce triangle est isocèle. Quel est son sommet principal ?"+figure(P,"isocèle",noms),choix:["A","B","C"],r:sommet,correction:"Le sommet principal est le sommet commun aux deux côtés de même longueur : "+sommet+"."}
+                      :{q:"Ce triangle est isocèle. Quelle est sa base ?"+figure(P,"isocèle",noms),choix:segs.sort(),r:base,correction:"La base est le côté opposé au sommet principal : "+base+"."};
+    }
+    var R=triangle(h,"rectangle"),hyp="["+[noms[1],noms[2]].sort().join("")+"]";
+    var segs2=["["+[noms[0],noms[1]].sort().join("")+"]",hyp,"["+[noms[0],noms[2]].sort().join("")+"]"].sort();
+    return {q:"Ce triangle est rectangle. Quelle est son hypoténuse ?"+figure(R,"rectangle",noms),choix:segs2,r:hyp,correction:"L’hypoténuse est le côté opposé à l’angle droit (le plus long) : "+hyp+"."};
+  }};
+
+  // ---------- Construire (atelier) ----------
+  function base(h,L){return {A:[5-L/2,5.4],B:[5+L/2,5.4]}}
+  function lignesTri(A,B,C){return [[A,B],[B,C],[C,A]]}
+  var TROIS_COTES={ nom:"Construire : trois longueurs (compas)", gen:function(h){
+    var c=h.rnd(40,60)/10,b,a,px,py;
+    do{b=h.rnd(30,55)/10;a=h.rnd(30,55)/10;px=(b*b-a*a+c*c)/(2*c);py=Math.sqrt(Math.max(0,b*b-px*px))}while(b+a<=c+.8||Math.abs(a-b)>=c-.8||py<1.5||py>4.6);
+    var S=base(h,c),C1=[S.A[0]+px,5.4-py],C2=[S.A[0]+px,5.4+py];
+    return {q:"Construis le triangle ABC avec <b>AB = "+nb(c)+" cm</b>, <b>AC = "+nb(b)+" cm</b> et <b>BC = "+nb(a)+" cm</b> : place le point C.",r:"triangle construit",
+            widget:GEO.tache({compas:{mode:"arcs",vers:[C1,C2]},tuto:"triangle-compas",donnees:{points:{A:S.A,B:S.B},segments:[["A","B"]]},outils:["regle","compas","point"],placer:["C"],
+              aide:"Arc de centre A de rayon "+nb(b)+" cm, arc de centre B de rayon "+nb(a)+" cm : C est à l’intersection.",
+              verifier:function(e,G){return Math.min(G.point(e,C1,"C"),G.point(e,C2,"C"))},corrige:{points:{C:C1},segments:[[S.A,C1],[S.B,C1]]}}),
+            correction:"C est à "+nb(b)+" cm de A (cercle de centre A) et à "+nb(a)+" cm de B (cercle de centre B)."};
+  }};
+  var RECTANGLE={ nom:"Construire : triangle rectangle (équerre)", gen:function(h){
+    var c=h.rnd(40,60)/10,b=h.rnd(25,45)/10,S=base(h,c),C1=[S.A[0],5.4-b],C2=[S.A[0],5.4+b];
+    return {q:"Construis le triangle ABC <b>rectangle en A</b> avec <b>AC = "+nb(b)+" cm</b> : place le point C.",r:"triangle construit",
+            widget:GEO.tache({tuto:"triangle-rectangle",donnees:{points:{A:S.A,B:S.B},segments:[["A","B"]]},outils:["regle","equerre","point"],placer:["C"],
+              aide:"Trace la perpendiculaire à [AB] passant par A (équerre), puis reporte "+nb(b)+" cm à partir de A (règle) et place C.",
+              verifier:function(e,G){return Math.min(G.point(e,C1,"C"),G.point(e,C2,"C"))},corrige:{points:{C:C1},segments:[[S.A,C1],[S.B,C1]]}}),
+            correction:"L’angle droit en A : C est sur la perpendiculaire à (AB) en A, à "+nb(b)+" cm de A."};
+  }};
+  var ANGLE={ nom:"Construire : avec un angle (rapporteur)", gen:function(h){
+    var c=h.rnd(40,60)/10,al=h.rnd(6,24)*5,b=h.rnd(25,40)/10,S=base(h,c),u=[1,0];
+    var C1=V.add(S.A,V.mul(V.rot(u,-al),b)),C2=V.add(S.A,V.mul(V.rot(u,al),b));
+    return {q:"Construis le triangle ABC avec <b>BAC = "+al+"°</b> et <b>AC = "+nb(b)+" cm</b> : place le point C.",r:"triangle construit",
+            widget:GEO.tache({tuto:"triangle-angle",donnees:{points:{A:S.A,B:S.B},segments:[["A","B"]]},outils:["regle","rapporteur","point"],placer:["C"],
+              aide:"Rapporteur centré sur A, son 0 sur [AB] : marque "+al+"°. Trace la demi-droite depuis A, puis reporte "+nb(b)+" cm à la règle.",
+              verifier:function(e,G){return Math.min(G.point(e,C1,"C"),G.point(e,C2,"C"))},corrige:{points:{C:C1},segments:[[S.A,C1],[S.B,C1]]}}),
+            correction:"C est sur la demi-droite qui fait un angle de "+al+"° avec [AB], à "+nb(b)+" cm de A."};
+  }};
+  var ISOCELE={ nom:"Construire : triangle isocèle (compas)", gen:function(h){
+    var c=h.rnd(35,55)/10,x,py;do{x=h.rnd(30,50)/10;py=Math.sqrt(Math.max(0,x*x-c*c/4))}while(x<=c/2+.6||py>4.6);
+    var B=[5-c/2,5.4],C=[5+c/2,5.4],A1=[5,5.4-py],A2=[5,5.4+py];
+    return {q:"Construis le triangle ABC <b>isocèle en A</b> avec <b>AB = AC = "+nb(x)+" cm</b> : place le point A.",r:"triangle construit",
+            widget:GEO.tache({compas:{mode:"arcs",vers:[A1,A2]},tuto:"isocele",donnees:{points:{B:B,C:C},segments:[["B","C"]]},outils:["regle","compas","point"],placer:["A"],
+              aide:"Deux arcs de même rayon "+nb(x)+" cm, l’un de centre B, l’autre de centre C : A est à l’intersection.",
+              verifier:function(e,G){return Math.min(G.point(e,A1,"A"),G.point(e,A2,"A"))},corrige:{points:{A:A1},segments:[[B,A1],[C,A1]]}}),
+            correction:"A est à "+nb(x)+" cm de B et à "+nb(x)+" cm de C : deux arcs de même rayon."};
+  }};
+
+  FLASH.chapitre({
+    titre: "Triangles",
+    image: FIG.dessin(2.4,2,[{poly:[[0,2],[2.4,2],[1.2,0]],plein:1}],{px:20}),
+    nbQuestions: 10,
+    testAuto: false,
+    titres: [{ nom:"Permis triangles", medaille:["PERMIS","TRIANGLES","△"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu sais reconnaître et construire les triangles.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Reconnaître", nom:"Nature d’un triangle", image:'<span class="ill-dec">△ isocèle ?</span>', types:[NATURE_FIG,NATURE_FIG,NATURE_LONG] },
+      { groupe:"Reconnaître", nom:"Vocabulaire", affiche:"Sommet principal, base, hypoténuse", image:'<span class="ill-dec">base</span>', types:[VOCAB] },
+      { groupe:"Construire", nom:"Avec le compas", tutos:["triangle-compas","isocele"], affiche:"Au compas (3 longueurs, isocèle)", image:'<span class="ill-dec">◠ ◠</span>', nb:5, types:[TROIS_COTES,ISOCELE] },
+      { groupe:"Construire", nom:"Avec l’équerre", tutos:["triangle-rectangle"], affiche:"Triangle rectangle (équerre)", image:'<span class="ill-dec">📐</span>', nb:5, types:[RECTANGLE] },
+      { groupe:"Construire", nom:"Avec le rapporteur", tutos:["triangle-angle"], affiche:"Avec un angle (rapporteur)", image:'<span class="ill-dec">40°</span>', nb:5, types:[ANGLE] },
+      { groupe:"Test", nom:"Test : tout le chapitre", commeTest:true, nb:20, image:'<span class="ill-dec">△</span>',
+        types:[NATURE_FIG,NATURE_FIG,NATURE_FIG,NATURE_FIG,NATURE_FIG,NATURE_LONG,NATURE_LONG,NATURE_LONG,NATURE_LONG,VOCAB,VOCAB,VOCAB,VOCAB,VOCAB,NATURE_FIG,NATURE_LONG,VOCAB,TROIS_COTES,RECTANGLE,ANGLE] }
+    ]
+  });
+})();
+</script>
+</body>
+</html>

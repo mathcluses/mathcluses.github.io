@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>6e · Questions flash : Quadrilatères</title>
+<link rel="stylesheet" href="../commun/flash.css">
+</head>
+<body>
+<!--
+  QUESTIONS FLASH 6e : QUADRILATÈRES (rectangle, losange, carré)
+  Parties : nature (figure codée, ou phrase), propriétés (côtés, angles, diagonales ; « un carré est un rectangle »…),
+  construire un rectangle, un carré (équerre et règle), un losange (compas) dans l'atelier ../commun/geo.js.
+  Titre : « Permis quadrilatères » (2 tests d'affilée à 17 / 20 ou plus).
+-->
+<main id="flash"></main>
+<script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/figures.js"></script>
+<script src="../commun/geo.js"></script>
+<script src="../commun/tuto.js"></script>
+<script>
+(function(){
+  var O=FLASH.outils, nb=O.nb, V=GEO.V;
+  var NATURES=["quadrilatère quelconque","rectangle","losange","carré"];
+
+  // ---------- Reconnaître ----------
+  function quad(h,n){
+    var P;
+    if(n==="rectangle"){var r=h.choix([.5,.6,1.6,1.8]);P=[[0,0],[1,0],[1,r],[0,r]]}
+    if(n==="carré")P=[[0,0],[1,0],[1,1],[0,1]];
+    if(n==="losange"){var d=h.choix([.45,.55,1.7,2]);P=[[0,0],[1,d/2],[2,0],[1,-d/2]]}
+    if(n==="quadrilatère quelconque")P=[[0,0],[1,h.rnd(-20,10)/100],[h.rnd(110,135)/100,h.rnd(70,95)/100],[h.rnd(10,30)/100,h.rnd(55,80)/100]];
+    var rot=h.rnd(0,359);P=P.map(function(p){return V.rot(p,rot)});
+    var xs=P.map(function(p){return p[0]}),ys=P.map(function(p){return p[1]}),k=Math.min(5/(Math.max.apply(null,xs)-Math.min.apply(null,xs)),3.6/(Math.max.apply(null,ys)-Math.min.apply(null,ys)));
+    return P.map(function(p){return [(p[0]-Math.min.apply(null,xs))*k,(p[1]-Math.min.apply(null,ys))*k]});
+  }
+  function figure(P,n){
+    var els=[{poly:P,plein:1}],i;
+    if(n==="rectangle"||n==="carré")for(i=0;i<4;i++)els.push({droit:[P[i],P[(i+1)%4],P[(i+3)%4]]});
+    if(n==="rectangle"){els.push({egal:[P[0],P[1]]},{egal:[P[2],P[3]]},{egal:[P[1],P[2]],n:2},{egal:[P[3],P[0]],n:2})}
+    if(n==="losange"||n==="carré")for(i=0;i<4;i++)els.push({egal:[P[i],P[(i+1)%4]]});
+    return FIG.dessin(5,3.6,els,{px:34});
+  }
+  var NATURE_FIG={ nom:"Nature d’un quadrilatère (figure codée)", gen:function(h){
+    var n=h.choix(NATURES),P=quad(h,n);
+    return {q:"Quelle est la nature de ce quadrilatère ? (Regarde les codages.)"+figure(P,n),large:true,choix:NATURES,r:n,
+            correction:{"quadrilatère quelconque":"Aucun codage : quadrilatère quelconque.",rectangle:"4 angles droits : rectangle.",losange:"4 côtés de même longueur : losange.",carré:"4 angles droits et 4 côtés de même longueur : carré."}[n]};
+  }};
+  var PHRASES=[["Un quadrilatère qui a 4 angles droits est…","un rectangle"],["Un quadrilatère qui a 4 côtés de même longueur est…","un losange"],
+               ["Un quadrilatère qui a 4 angles droits et 4 côtés de même longueur est…","un carré"],["Un quadrilatère dont les diagonales sont perpendiculaires et se coupent en leur milieu est…","un losange"],
+               ["Un quadrilatère dont les diagonales ont la même longueur et se coupent en leur milieu est…","un rectangle"],["Un rectangle qui a 4 côtés de même longueur est…","un carré"],
+               ["Un losange qui a un angle droit est…","un carré"]];
+  var NATURE_PHRASE={ nom:"Nature d’un quadrilatère (phrase)", gen:function(h){
+    var p=h.choix(PHRASES);
+    return {q:p[0],choix:["un rectangle","un losange","un carré","un triangle","un quadrilatère quelconque"],r:p[1],correction:p[0].replace("…"," ")+p[1]+"."};
+  }};
+
+  // ---------- Propriétés ----------
+  var PROPS=[
+    ["Les diagonales d’un rectangle…","ont la même longueur et se coupent en leur milieu"],
+    ["Les diagonales d’un losange…","sont perpendiculaires et se coupent en leur milieu"],
+    ["Les diagonales d’un carré…","sont perpendiculaires, de même longueur et se coupent en leur milieu"]
+  ];
+  var DIAG=["ont la même longueur et se coupent en leur milieu","sont perpendiculaires et se coupent en leur milieu","sont perpendiculaires, de même longueur et se coupent en leur milieu","ne se coupent pas en leur milieu"];
+  var VRAI_FAUX=[["Un carré est un rectangle.","Vrai"],["Un carré est un losange.","Vrai"],["Un rectangle est toujours un carré.","Faux"],["Un losange est toujours un carré.","Faux"],
+    ["Les côtés opposés d’un rectangle ont la même longueur.","Vrai"],["Les 4 côtés d’un rectangle ont toujours la même longueur.","Faux"],["Un losange a 4 angles droits.","Faux"],
+    ["Les côtés opposés d’un losange sont parallèles.","Vrai"],["Les diagonales d’un rectangle sont toujours perpendiculaires.","Faux"],["Un rectangle a 4 angles droits.","Vrai"]];
+  var PROPRIETES={ nom:"Propriétés", gen:function(h){
+    if(h.choix([true,false])){var p=h.choix(PROPS);return {q:p[0],large:true,choix:DIAG,r:p[1],correction:p[0].replace("…"," ")+p[1]+"."}}
+    var v=h.choix(VRAI_FAUX);
+    return {q:"Vrai ou faux ? "+v[0],choix:["Vrai","Faux"],r:v[1],correction:v[0]+" → "+v[1]+(v[0].indexOf("carré est")>=0?" : le carré a toutes les propriétés du rectangle et du losange.":".")};
+  }};
+
+  // ---------- Construire (atelier) ----------
+  function base(L){return {A:[5-L/2,5.6],B:[5+L/2,5.6]}}
+  // C et D au-dessus de [AB] (ou en dessous : les deux sont acceptés, mais du même côté)
+  function verifierCD(C1,D1,C2,D2){return function(e,G){return Math.min(Math.max(G.point(e,C1,"C"),G.point(e,D1,"D")),Math.max(G.point(e,C2,"C"),G.point(e,D2,"D")))}}
+  var RECT={ nom:"Construire un rectangle", gen:function(h){
+    var L=h.rnd(40,65)/10,l=h.rnd(20,40)/10,S=base(L),C1=[S.B[0],5.6-l],D1=[S.A[0],5.6-l],C2=[S.B[0],5.6+l],D2=[S.A[0],5.6+l];
+    return {q:"Construis le rectangle ABCD avec <b>BC = "+nb(l)+" cm</b> : place les points C et D.",r:"rectangle construit",
+            widget:GEO.tache({tuto:"rectangle",donnees:{points:{A:S.A,B:S.B},segments:[["A","B"]]},outils:["regle","equerre","point"],placer:["C","D"],
+              aide:"Perpendiculaires à [AB] en B et en A (équerre), puis reporte "+nb(l)+" cm sur chacune (règle). Place C, puis D.",
+              verifier:verifierCD(C1,D1,C2,D2),corrige:{points:{C:C1,D:D1},segments:[[S.B,C1],[C1,D1],[D1,S.A]]}}),
+            correction:"Un rectangle a 4 angles droits : C sur la perpendiculaire en B, D sur la perpendiculaire en A, à "+nb(l)+" cm."};
+  }};
+  var CARRE={ nom:"Construire un carré", gen:function(h){
+    var L=h.rnd(30,45)/10,S=base(L),C1=[S.B[0],5.6-L],D1=[S.A[0],5.6-L],C2=[S.B[0],5.6+L],D2=[S.A[0],5.6+L];
+    return {q:"Construis le carré ABCD de côté [AB] : place les points C et D.",r:"carré construit",
+            widget:GEO.tache({compas:{mode:"arcs",vers:[C1,D1,C2,D2]},tuto:"carre",donnees:{points:{A:S.A,B:S.B},segments:[["A","B"]]},outils:["regle","equerre","compas","point"],placer:["C","D"],
+              aide:"Mesure AB. Perpendiculaires en A et en B (équerre), puis reporte la même longueur (règle ou compas).",
+              verifier:verifierCD(C1,D1,C2,D2),corrige:{points:{C:C1,D:D1},segments:[[S.B,C1],[C1,D1],[D1,S.A]]}}),
+            correction:"Un carré : 4 angles droits et 4 côtés de "+nb(L)+" cm."};
+  }};
+  var LOSANGE={ nom:"Construire un losange", gen:function(h){
+    var d=h.rnd(40,60)/10,c,hh;do{c=h.rnd(30,45)/10;hh=Math.sqrt(Math.max(0,c*c-d*d/4))}while(c<=d/2+.5||hh>2.6);
+    var A=[5-d/2,3.8],C=[5+d/2,3.8],B=[5,3.8+hh],D=[5,3.8-hh];
+    return {q:"Construis le losange ABCD de diagonale [AC] et de côté <b>"+nb(c)+" cm</b> : place les points B et D.",r:"losange construit",
+            widget:GEO.tache({compas:{mode:"arcs",vers:[B,D]},tuto:"losange-cotes",donnees:{points:{A:A,C:C},segments:[["A","C"]]},outils:["regle","compas","point"],placer:["B","D"],
+              aide:"Les 4 côtés mesurent "+nb(c)+" cm : arcs de centre A et de centre C, de rayon "+nb(c)+" cm, de chaque côté de [AC].",
+              verifier:function(e,G){return Math.min(Math.max(G.point(e,B,"B"),G.point(e,D,"D")),Math.max(G.point(e,D,"B"),G.point(e,B,"D")))},
+              corrige:{points:{B:B,D:D},segments:[[A,B],[B,C],[C,D],[D,A]]}}),
+            correction:"B et D sont à "+nb(c)+" cm de A et de C : ce sont les deux intersections des arcs."};
+  }};
+  // losange par ses diagonales : [AC] donnée, [BD] perpendiculaire en son milieu O, de longueur e
+  var LOSANGE_DIAG={ nom:"Construire un losange (diagonales)", gen:function(h){
+    var d=h.rnd(8,12)/2,e;do{e=h.rnd(4,10)/2}while(Math.abs(e-d)<1);   // diagonales différentes (sinon c'est un carré)
+    var A=[5-d/2,3.8],C=[5+d/2,3.8],O=[5,3.8],B=[5,3.8+e/2],D=[5,3.8-e/2];
+    return {q:"Construis le losange ABCD de diagonales <b>AC = "+nb(d)+" cm</b> et <b>BD = "+nb(e)+" cm</b> : place O (milieu de [AC]), puis B et D.",r:"losange construit",
+            widget:GEO.tache({tuto:"losange-diagonales",donnees:{points:{A:A,C:C},segments:[["A","C"]]},outils:["regle","equerre","point"],placer:["O","B","D"],
+              aide:"Place le milieu O de [AC]. Perpendiculaire à [AC] en O (équerre), puis "+nb(e/2)+" cm de chaque côté de O.",
+              verifier:function(e2,G){return Math.min(Math.max(G.point(e2,B,"B"),G.point(e2,D,"D")),Math.max(G.point(e2,D,"B"),G.point(e2,B,"D")))},
+              corrige:{points:{O:O,B:B,D:D},segments:[[A,B],[B,C],[C,D],[D,A],[B,D]]}}),
+            correction:"Les diagonales d’un losange sont perpendiculaires et ont le même milieu : B et D à "+nb(e/2)+" cm de O."};
+  }};
+
+  FLASH.chapitre({
+    titre: "Quadrilatères",
+    image: FIG.dessin(2.4,1.6,[{poly:[[0,0],[2.4,0],[2.4,1.6],[0,1.6]],plein:1}],{px:20}),
+    nbQuestions: 10,
+    testAuto: false,
+    titres: [{ nom:"Permis quadrilatères", medaille:["PERMIS","QUADRILATÈRES","▭"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu connais rectangle, losange et carré.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Reconnaître", nom:"Nature d’un quadrilatère", image:'<span class="ill-dec">▭ ◇ ▢</span>', types:[NATURE_FIG,NATURE_FIG,NATURE_PHRASE] },
+      { groupe:"Propriétés", nom:"Propriétés", affiche:"Côtés, angles, diagonales", image:'<span class="ill-dec">diagonales</span>', types:[PROPRIETES] },
+      { groupe:"Construire", nom:"Rectangle et carré", tutos:["rectangle","carre"], image:'<span class="ill-dec">📐 ▭</span>', nb:5, types:[RECT,CARRE] },
+      { groupe:"Construire", nom:"Losange", tutos:["losange-cotes","losange-diagonales"], image:'<span class="ill-dec">◠ ◇</span>', nb:5, types:[LOSANGE,LOSANGE_DIAG] },
+      { groupe:"Test", nom:"Test : tout le chapitre", commeTest:true, nb:20, image:'<span class="ill-dec">▭</span>',
+        types:[NATURE_FIG,NATURE_FIG,NATURE_FIG,NATURE_FIG,NATURE_FIG,NATURE_PHRASE,NATURE_PHRASE,NATURE_PHRASE,NATURE_PHRASE,PROPRIETES,PROPRIETES,PROPRIETES,PROPRIETES,PROPRIETES,PROPRIETES,NATURE_FIG,NATURE_PHRASE,RECT,CARRE,LOSANGE] }
+    ]
+  });
+})();
+</script>
+</body>
+</html>

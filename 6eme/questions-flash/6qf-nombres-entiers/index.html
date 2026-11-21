@@ -8,27 +8,309 @@
 </head>
 <body>
 <!--
-  QUESTIONS FLASH 6e : Nombres entiers
-  Le fonctionnement (réglages, chrono, correction, score) est dans ../commun/flash.js : rien à y toucher.
-  Ici, on écrit seulement les TYPES de questions, dans la liste « types » ci-dessous.
-  Modèle complet avec plusieurs exemples : ../6qf-multiplication/index.html
-  Quand le chapitre a des questions : passer « pret: true » dans ../chapitres.js.
+  QUESTIONS FLASH 6e : NOMBRES ENTIERS
+  Parties : en lettres / en chiffres, décomposition, tableau de numération, rang d'un chiffre,
+  demi-droite graduée (graduations de 1, 2, 3, 4, 5, 10, 25…), comparer et ranger.
+  Titres : « Permis entiers » (2 tests du chapitre d'affilée à 17 / 20 ou plus) et « Maître des nombres »
+  (Permis entiers + Permis décimaux, affiché aussi dans le chapitre Nombres décimaux).
+
+  Outils communs aux deux chapitres de nombres (fabriquer, écrire, lettres, propositions, demi-droite) :
+  ../commun/nombres.js. Écriture en lettres : orthographe rectifiée de 1990 (traits d'union partout,
+  sauf autour de « million » et « milliard », qui sont des noms).
+  Mode d'emploi général d'un type de questions : voir ../6qf-fractions/index.html.
 -->
 <main id="flash"></main>
 <script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/nombres.js"></script>
 <script>
-FLASH.chapitre({
-  titre: "Nombres entiers",
-  types: [
-    // {
-    //   nom: "Nom du type de questions",
-    //   gen: function(h){
-    //     var a=h.rnd(2,9), b=h.rnd(2,9);
-    //     return { q: a+" × "+b+" = ?", r: a*b };
-    //   }
-    // },
-  ]
-});
+(function(){
+  var O=FLASH.outils, N=NOMBRES, ESP=N.ESP, RANGS=N.RANGS, qte=N.qte, lettres=N.lettres;
+
+  // ---------- Outils du chapitre ----------
+  // écriture d'un entier en chiffres (classes de 3 chiffres) ; pos : rang du chiffre à colorer
+  function ec(n,pos){return N.ecrire(String(n),"",pos)}
+  // un entier de « nb » chiffres, avec des zéros assez souvent (la difficulté de la lecture)
+  // (au moins 3 chiffres non nuls quand il y a au moins 4 chiffres : pas de « 1 000 » tout seul)
+  function entier(h,nb,partZeros){
+    var s;
+    do{s=N.ch(h,true);for(var i=1;i<nb;i++)s+=Math.random()<(partZeros||.3)?"0":N.ch(h)}
+    while(nb>=4&&s.replace(/0/g,"").length<3);
+    return Number(s);
+  }
+  // nombres « qui se ressemblent » : deux chiffres échangés, un zéro en plus ou en moins, × 10, ÷ 10, un chiffre changé
+  function voisins(h,n){
+    var s=String(n),l=[n*10,Math.floor(n/10)];
+    for(var i=0;i<s.length-1;i++)if(s[i]!==s[i+1])l.push(Number(s.slice(0,i)+s[i+1]+s[i]+s.slice(i+2)));
+    for(var j=1;j<s.length;j++)if(s[j]==="0")l.push(Number(s.slice(0,j)+s.slice(j+1)));
+    for(var k=0;k<3;k++){var p=h.rnd(1,s.length);l.push(Number(s.slice(0,p)+"0"+s.slice(p)))}
+    for(var m=0;m<3;m++){var q=h.rnd(1,s.length-1),c=(Number(s[q])+h.choix([1,9]))%10;l.push(Number(s.slice(0,q)+c+s.slice(q+1)))}
+    [1,10,100,1000].forEach(function(d){if(d<n){l.push(n+d);l.push(n-d)}});   // nombres ronds (200, 1 000…) : quelques voisins de plus
+    return l.filter(function(x){return x>0&&x!==n&&x<1e11});
+  }
+  // une faute d'orthographe typique sur l'écriture en lettres (même valeur : la question porte sur l'écriture)
+  function faute(h,txt){
+    var f=[[/cents(?=$| )/,"cent"],[/-cent-/,"-cents-"],[/quatre-vingts(?=$| )/,"quatre-vingt"],[/quatre-vingt-/,"quatre-vingts-"],
+           [/-mille/,"-milles"],[/ millions/," million"],[/-et-un/,"-un"],[/^mille/,"un-mille"]]
+      .filter(function(r){return r[0].test(txt)});
+    return f.length?txt.replace.apply(txt,h.choix(f)):null;
+  }
+  // nombres pour l'écriture en lettres : de 3 à 7 chiffres le plus souvent, parfois jusqu'aux milliards
+  function nombreALire(h){return entier(h,h.choix([3,4,4,5,5,6,6,7,7,8,10]),.35)}
+
+  // Tableau de numération des entiers : classes des millions, des mille, des unités
+  function tableau(n){
+    var s=String(n),cases=[];
+    for(var i=0;i<9;i++){var p=8-i;cases.push(p<s.length?s[s.length-1-p]:"")}
+    return '<table class="tab-num" aria-label="tableau de numération"><thead>'+
+      '<tr><th colspan="3">Millions</th><th colspan="3" class="dec">Mille</th><th colspan="3" class="dec">Unités</th></tr>'+
+      '<tr>'+["C","D","U","C","D","U","C","D","U"].map(function(c,i){return '<th'+(i===3||i===6?' class="dec"':'')+'>'+c+'</th>'}).join("")+'</tr></thead>'+
+      '<tbody><tr>'+cases.map(function(c,i){return '<td'+(i===3||i===6?' class="dec"':'')+'>'+c+'</td>'}).join("")+'</tr></tbody></table>';
+  }
+
+  // Graduations entières : une graduation vaut g (1, 2, 3, 4, 5, 10, 20, 25, 50, 100, 1 000) ;
+  // un nombre est écrit toutes les « tous » graduations, et la demi-droite ne commence pas toujours à 0
+  function graduation(h){
+    var g=h.choix([1,1,2,3,4,5,5,10,20,25,50,100,1000]),tous=h.choix([2,4,5,10]);
+    if(g===1&&tous!==10)tous=h.choix([5,10]);
+    if(g>=100&&tous===2)tous=h.choix([4,5]);          // grands nombres : étiquettes assez espacées
+    var nb=tous===10?20:tous*(tous===2?h.choix([5,6]):tous===4?h.choix([3,4]):h.choix([2,3]));
+    var debut=h.choix([0,g*tous*h.rnd(1,12)]);
+    return {g:g,tous:tous,nb:nb,debut:debut,
+      explique:"Entre "+O.nb(debut)+" et "+O.nb(debut+tous*g)+", il y a "+tous+" intervalles : une graduation vaut "+O.nb(tous*g)+" ÷ "+tous+" = "+O.nb(g)+"."};
+  }
+  var PAS=[1,2,3,4,5,10,20,25,50,100,200,250,500,1000];
+
+  // ======================================================================
+  // ---------- 1. En lettres, en chiffres ----------
+  var EN_LETTRES={
+    nom: "Écrire en lettres",
+    gen: function(h){
+      var n=nombreALire(h),txt=lettres(n),fausses=voisins(h,n).map(function(v){return [lettres(v),v]});
+      var f=faute(h,txt);if(f&&h.rnd(0,2))fausses.push([f,n]);          // 2 fois sur 3 : une faute d'orthographe proposée
+      return { q: "Comment s’écrit "+ec(n)+" en lettres ?", large: true, choix: N.propositions(h,[txt,n],fausses,false,true,6), r: txt,
+               correction: "On lit classe par classe : "+ec(n)+" s’écrit « "+txt+" »." };
+    }
+  };
+  var EN_CHIFFRES={
+    nom: "Écrire en chiffres",
+    gen: function(h){
+      var n=nombreALire(h),fausses=voisins(h,n).map(function(v){return [ec(v),v]});
+      return { q: "Écris en chiffres : <b>"+lettres(n)+"</b>", choix: N.propositions(h,[ec(n),n],fausses), r: ec(n),
+               correction: "Classe par classe, avec 3 chiffres dans chaque classe (sauf la première) : "+ec(n)+"." };
+    }
+  };
+
+  // ---------- 2. Décomposition ----------
+  // termes « chiffre × 10, 100, 1 000… » d'un nombre (les chiffres 0 sont sautés ; les unités sont écrites seules)
+  function termes(n){
+    var s=String(n),l=[];
+    for(var i=0;i<s.length;i++){var c=Number(s[i]),p=s.length-1-i;if(c)l.push({c:c,p:p})}
+    return l;
+  }
+  function ecrireTerme(t,trou){
+    if(t.p===0)return trou==="c"?"…":String(t.c);
+    return (trou==="c"?"…":t.c)+" × "+(trou==="p"?"…":O.nb(Math.pow(10,t.p)));
+  }
+  var DECOMP_TROU={
+    nom: "Compléter une décomposition",
+    gen: function(h){
+      var n=entier(h,h.rnd(4,6)),l=termes(n),t=h.choix(l),trou=t.p>0&&h.choix([true,false])?"p":"c";
+      var ecr=l.map(function(x){return ecrireTerme(x,x===t?trou:null)}).join(" + ");
+      var corr=ec(n)+" = "+l.map(function(x){return ecrireTerme(x)}).join(" + ")+".";
+      if(trou==="p"){
+        var choix=[1,10,100,1000,10000,100000,1000000].map(function(x){return O.nb(x)});
+        return { q: ec(n)+" = "+ecr, choix: choix, r: O.nb(Math.pow(10,t.p)), correction: "Le "+t.c+" est le chiffre des "+RANGS[t.p]+" : "+corr };
+      }
+      var autres=termes(n).map(function(x){return x.c});
+      return { q: ec(n)+" = "+ecr, choix: N.propositions(h,[String(t.c),t.c],[0,1,2,3,4,5,6,7,8,9].concat(autres).map(function(x){return [String(x),x]}),true),
+               r: String(t.c), correction: corr };
+    }
+  };
+  var DECOMP_NOMBRE={
+    nom: "Retrouver le nombre",
+    gen: function(h){
+      var n=entier(h,h.rnd(4,6),.4),l=h.melange(termes(n));
+      var colle=Number(l.map(function(x){return x.c}).join(""));       // erreur : les chiffres recopiés dans l'ordre écrit
+      var fausses=voisins(h,n).concat([colle]).map(function(v){return [ec(v),v]});
+      return { q: l.map(function(x){return ecrireTerme(x)}).join(" + ")+" = ?", choix: N.propositions(h,[ec(n),n],fausses,true), r: ec(n),
+               correction: "On range les chiffres à leur place, en mettant 0 dans les rangs vides : "+ec(n)+"." };
+    }
+  };
+
+  // ---------- 3. Tableau de numération ----------
+  var LIRE_TAB={
+    nom: "Lire un nombre dans le tableau",
+    gen: function(h){
+      var n=entier(h,h.rnd(4,9),.3),fausses=voisins(h,n).map(function(v){return [ec(v),v]});
+      return { q: "Quel nombre est écrit dans ce tableau ?"+tableau(n), choix: N.propositions(h,[ec(n),n],fausses,true), r: ec(n),
+               correction: "On lit classe par classe : "+ec(n)+"." };
+    }
+  };
+  var CLASSE={
+    nom: "Les chiffres d’une classe",
+    gen: function(h){
+      var n=entier(h,h.rnd(7,9),.25),s=String(n),cl=h.choix([["millions",6],["mille",3],["unités",0]]);
+      var morceau=function(p){var a=Math.max(0,s.length-p-3),b=s.length-p;return s.slice(a,b)};
+      var bonne=morceau(cl[1]),fausses=[morceau(0),morceau(3),morceau(6),bonne.split("").reverse().join(""),
+        s.slice(Math.max(0,s.length-cl[1]-4),s.length-cl[1]-1),s.slice(s.length-cl[1]-2,s.length-cl[1]+1),
+        s.slice(0,2),s.slice(0,4),s.slice(-2),s.slice(-4),s.slice(1,4),s.slice(2,5)]
+        .filter(function(x){return x&&x!==bonne}).map(function(x,i){return [x,i+1]});   // texte différent = réponse différente
+      var choix=N.propositions(h,[bonne,-1],fausses,false,true);
+      return { q: "Dans "+ec(n)+", quels sont les chiffres de la classe des <b>"+cl[0]+"</b> ?", choix: choix, r: bonne,
+               correction: "On coupe le nombre en classes de 3 chiffres en partant de la droite : unités, mille, millions. Classe des "+cl[0]+" : "+bonne+"." };
+    }
+  };
+
+  // ---------- 4. Rang d'un chiffre ----------
+  var RANG_COLORE={
+    nom: "Rang du chiffre coloré",
+    gen: function(h){
+      var n=entier(h,h.rnd(4,12),.15),s=String(n),p=h.rnd(0,s.length-1),bonne=[RANGS[p],p+10],fausses=[];
+      [-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7].forEach(function(d){var r=p+d;if(r>=0&&r<=11)fausses.push([RANGS[r],r+10])});
+      return { q: "Dans "+ec(n,p)+", quel est le rang du chiffre <span class=\"chiffre-vise\">coloré</span> ?", large: true,
+               choix: N.propositions(h,bonne,fausses).sort(function(a,b){return N.valeurRang(b)-N.valeurRang(a)}), r: bonne[0],
+               correction: "C’est le chiffre des "+RANGS[p]+"." };
+    }
+  };
+  var CHIFFRE_DU_RANG={
+    nom: "Chiffre d’un rang donné",
+    gen: function(h){
+      var nb=h.rnd(5,10),c=h.melange([0,1,2,3,4,5,6,7,8,9]);
+      if(c[0]===0)c.push(c.shift());
+      var s=c.slice(0,nb).join(""),n=Number(s),p=h.rnd(0,nb-1),chiffre=function(r){return Number(s[s.length-1-r])};
+      var fausses=[];for(var r=0;r<nb;r++)if(r!==p)fausses.push([String(chiffre(r)),chiffre(r)]);
+      if(fausses.length<7)for(var x=0;x<10;x++)fausses.push([String(x),x]);   // nombre court : d'autres chiffres en plus
+      return { q: "Dans "+ec(n)+", quel est le chiffre des <b>"+RANGS[p]+"</b> ?", choix: N.propositions(h,[String(chiffre(p)),chiffre(p)],fausses,true),
+               r: String(chiffre(p)), correction: "Le chiffre des "+RANGS[p]+" est "+chiffre(p)+" : "+ec(n,p)+"." };
+    }
+  };
+  var EN_TOUT={1:"dizaines",2:"centaines",3:"milliers",4:"dizaines de mille",6:"millions"};
+  var COMBIEN={
+    nom: "Nombre de dizaines, centaines… en tout",
+    gen: function(h){
+      var n=entier(h,h.rnd(4,8),.2),s=String(n),p=h.choix([1,2,3,4,6].filter(function(r){return r<s.length-1}));
+      var combien=Math.floor(n/Math.pow(10,p)),chiffre=Number(s[s.length-1-p]);
+      return { q: "Combien y a-t-il de <b>"+EN_TOUT[p]+"</b> en tout dans "+ec(n)+" ?", r: combien,
+               pieges: [chiffre,Math.floor(combien/10)||chiffre+1,combien*10,n],
+               correction: "On garde tous les chiffres jusqu’à celui des "+RANGS[p]+" : il y a "+O.nb(combien)+" "+EN_TOUT[p]+" dans "+ec(n,p)+"." };
+    }
+  };
+
+  // ---------- 5. Demi-droite graduée ----------
+  function pointA(h,g){var k;do{k=h.rnd(1,g.nb-1)}while(k%g.tous===0);return k}
+  var LIRE_ABSCISSE={
+    nom: "Lire une abscisse",
+    gen: function(h){
+      var g=graduation(h),k=pointA(h,g),v=g.debut+k*g.g;
+      return { q: "Quelle est l’abscisse du point A ?"+N.droite(g.debut,g.g,g.nb,g.tous,[{k:k,nom:"A"}]), r: v,
+               pieges: [g.debut+k,g.debut+(k+1)*g.g,g.debut+(k-1)*g.g,g.debut+k*g.g*2,(g.tous*g.g)%10===0?g.debut+k*g.tous*g.g/10:g.debut+k*g.g+1],
+               correction: g.explique+" A est à "+qte(k,"graduations")+" de "+O.nb(g.debut)+" : "+O.nb(v)+"." };
+    }
+  };
+  var TROUVER_POINT={
+    nom: "Trouver le point",
+    gen: function(h){
+      var g=graduation(h),k=pointA(h,g),ks=[k];
+      if(k>1)ks.push(k-1);if(k<g.nb-1)ks.push(k+1);
+      while(ks.length<6){var x=h.rnd(0,g.nb);if(ks.indexOf(x)<0)ks.push(x)}
+      ks.sort(function(a,b){return a-b});
+      var L=["A","B","C","D","E","F"],v=g.debut+k*g.g,bonne=L[ks.indexOf(k)];
+      return { q: "Quel point a pour abscisse <b>"+O.nb(v)+"</b> ?"+N.droite(g.debut,g.g,g.nb,g.tous,ks.map(function(x,i){return {k:x,nom:L[i]}})),
+               choix: L, r: bonne, correction: g.explique+" "+O.nb(v)+" est à "+qte(k,"graduations")+" de "+O.nb(g.debut)+" : c’est le point "+bonne+"." };
+    }
+  };
+  var VALEUR_GRAD={
+    nom: "Combien vaut une graduation ?",
+    gen: function(h){
+      var g=graduation(h),bonne=[O.nb(g.g),g.g];
+      return { q: "Combien vaut une graduation (l’écart entre deux traits voisins) ?"+N.droite(g.debut,g.g,g.nb,g.tous,[]),
+               choix: N.propositions(h,bonne,PAS.concat([g.tous*g.g]).map(function(x){return [O.nb(x),x]}),true), r: bonne[0], correction: g.explique };
+    }
+  };
+
+  // ---------- 6. Comparer et ranger ----------
+  // deux nombres proches : même nombre de chiffres, ou un chiffre de plus (mais commençant plus petit)
+  function proches(h){
+    var nb=h.rnd(3,7),a=entier(h,nb,.15),s=String(a),b;
+    switch(h.rnd(1,3)){
+      case 1: var i=h.rnd(1,nb-1);b=Number(s.slice(0,i)+(Number(s[i])+h.choix([1,9]))%10+s.slice(i+1));break;   // un chiffre change
+      case 2: b=Number("1"+"0".repeat(nb-1))*10+h.rnd(0,99);a=entier(h,nb,.1);if(String(a)[0]==="1")a+=8*Math.pow(10,nb-1);break;   // 9 876 et 10 012
+      default: var j=h.rnd(0,nb-2);b=Number(s.slice(0,j)+s[j+1]+s[j]+s.slice(j+2));          // deux chiffres échangés
+    }
+    if(a===b)b+=Math.pow(10,h.rnd(0,nb-2));
+    return h.choix([true,false])?[a,b]:[b,a];
+  }
+  var COMPARER={
+    nom: "Comparer deux entiers",
+    gen: function(h){
+      var p=proches(h),a=p[0],b=p[1],r=a<b?"&lt;":"&gt;",la=String(a).length,lb=String(b).length;
+      return { q: "Complète avec &lt;, = ou &gt; : "+O.nw(ec(a)+" … "+ec(b)), choix: ["&lt;","=","&gt;"], r: r,
+               correction: (la!==lb?"Le nombre qui a le plus de chiffres est le plus grand.":"Même nombre de chiffres : on compare chiffre par chiffre en partant de la gauche.")+" "+ec(a)+" "+r+" "+ec(b)+"." };
+    }
+  };
+  function famille(h,combien){                       // nombres qui se ressemblent (mêmes chiffres, longueurs voisines)
+    var n=entier(h,h.rnd(3,6),.2),l=[n].concat(h.melange(voisins(h,n)));
+    var res=[];l.forEach(function(x){if(res.indexOf(x)<0&&res.length<combien)res.push(x)});
+    return res;
+  }
+  var EXTREME={
+    nom: "Le plus grand, le plus petit",
+    gen: function(h){
+      var l=famille(h,h.rnd(6,7)),grand=h.choix([true,false]),r=grand?Math.max.apply(null,l):Math.min.apply(null,l);
+      return { q: "Quel est le plus <b>"+(grand?"grand":"petit")+"</b> de ces nombres ?", choix: h.melange(l).map(function(x){return ec(x)}), r: ec(r),
+               correction: "On compare d’abord le nombre de chiffres, puis les chiffres un par un en partant de la gauche : "+ec(r)+"." };
+    }
+  };
+  var RANGER={
+    nom: "Ranger dans l’ordre",
+    gen: function(h){
+      var l=famille(h,4),croissant=h.choix([true,false]),signe=croissant?" &lt; ":" &gt; ";
+      var tri=function(x){return x.slice().sort(function(a,b){return croissant?a-b:b-a})};
+      var ecr=function(x){return x.map(function(v){return ec(v)}).join(signe)},bonne=ecr(tri(l)),vus={},choix=[bonne];vus[bonne]=1;
+      var essais=[tri(l).reverse(),l.slice().sort(),l.slice().sort().reverse()];   // à l'envers, et « dans l'ordre du dictionnaire »
+      for(var i=0;i<40;i++)essais.push(h.melange(l));
+      essais.forEach(function(x){var e=ecr(x);if(!vus[e]&&choix.length<6){vus[e]=1;choix.push(e)}});
+      return { q: "Range ces nombres dans l’ordre <b>"+(croissant?"croissant":"décroissant")+"</b> : "+h.melange(l).map(function(v){return ec(v)}).join(" ; "),
+               large: true, choix: h.melange(choix), r: bonne,
+               correction: (croissant?"Du plus petit au plus grand":"Du plus grand au plus petit")+" : "+bonne+"." };
+    }
+  };
+
+  // ======================================================================
+  FLASH.chapitre({
+    titre: "Nombres entiers",
+    image: '<span class="ill-dec">1 453</span>',
+    nbQuestions: 10,
+    nbTest: 20,                                       // le test « tout le chapitre » (ajouté à la fin par le moteur)
+    titres: [
+      // Permis entiers : 2 tests du chapitre d'affilée avec au moins 17 / 20 (seuil non affiché aux élèves)
+      { nom: "Permis entiers", medaille: ["PERMIS","ENTIERS","1 453"],
+        serie: { partie: "Test : tout le chapitre", fois: 2, minimum: 17 },
+        condition: "Réussis le test du chapitre (20 questions) 2 fois d’affilée :",
+        bravo: "Tu maîtrises les nombres entiers.", tampon: "Validé" },
+      // Titre ultime, commun aux deux chapitres de nombres (même titre affiché ici et dans Nombres décimaux)
+      { nom: "Maître des nombres", chapitre: "Nombres 6e", medaille: ["MAÎTRE DES","NOMBRES","123"],
+        requiert: [{chapitre:"Nombres entiers",nom:"Permis entiers"},{chapitre:"Nombres décimaux",nom:"Permis décimaux"}],
+        condition: "Obtiens le Permis entiers et le Permis décimaux :", bravo: "Tu maîtrises tous les nombres de 6e !", tampon: "Validé" }
+    ],
+    sections: [
+      { groupe: "Lire et écrire", nom: "En lettres, en chiffres", image: '<span class="ill-dec">mille</span>',
+        types: [EN_LETTRES,EN_CHIFFRES] },
+      { groupe: "Lire et écrire", nom: "Décomposition", image: '<span class="ill-dec">4 × 100</span>',
+        types: [DECOMP_TROU,DECOMP_NOMBRE] },
+      { groupe: "Lire et écrire", nom: "Tableau de numération", image: '<span class="ill-dec">C D U</span>',
+        types: [LIRE_TAB,LIRE_TAB,LIRE_TAB,CLASSE,CLASSE] },
+      // 15 questions : 5 de chaque type
+      { groupe: "Lire et écrire", nom: "Rang d’un chiffre", nb: 15, image: '<span class="ill-dec">4<span class="chiffre-vise">7</span>2</span>',
+        types: [RANG_COLORE,CHIFFRE_DU_RANG,COMBIEN] },
+      { groupe: "Repérer et comparer", nom: "Demi-droite graduée", image: N.droite(0,5,10,2,[{k:3,nom:"A"}]),
+        types: [LIRE_ABSCISSE,LIRE_ABSCISSE,TROUVER_POINT,VALEUR_GRAD,VALEUR_GRAD] },
+      { groupe: "Repérer et comparer", nom: "Comparer et ranger", image: '<span class="ill-dec">99 &lt; 101</span>',
+        types: [COMPARER,COMPARER,EXTREME,RANGER,RANGER] }
+    ]
+  });
+})();
 </script>
 </body>
 </html>

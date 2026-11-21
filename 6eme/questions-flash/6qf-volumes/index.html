@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>6e · Questions flash : Volumes</title>
+<link rel="stylesheet" href="../commun/flash.css">
+</head>
+<body>
+<!--
+  QUESTIONS FLASH 6e : VOLUMES ET CONTENANCES
+  Parties : compter des petits cubes (pavé dessiné en perspective), volume : quel calcul ? combien ?
+  (pavé droit, cube), unités et contenances (1 L = 1 dm³), conversions (tableau à remplir).
+  Titre : « Permis volumes » (2 tests d'affilée à 17 / 20 ou plus).
+  Mode d'emploi : voir ../6qf-fractions/index.html.
+-->
+<main id="flash"></main>
+<script src="../commun/flash.js"></script>
+<script src="../commun/domaines.js"></script>
+<script src="../commun/nombres.js"></script>
+<script src="../commun/figures.js"></script>
+<script src="../commun/conversion.js"></script>
+<script>
+(function(){
+  var O=FLASH.outils, N=NOMBRES, nb=O.nb;
+
+  // ---------- Compter des cubes ----------
+  var CUBES={ nom:"Compter des petits cubes", gen:function(h){
+    var a=h.rnd(2,5),b=h.rnd(2,4),c=h.rnd(1,4),v=a*b*c,cm=h.choix([true,false]);
+    return {q:(cm?"Chaque petit cube a un volume de 1 cm³. Quel est le volume de ce pavé (en cm³) ?":"Combien de petits cubes forment ce pavé (plein) ?")+FIG.cubes(a,b,c),r:v,
+            pieges:[a*c+a*b+b*c,a*c,v+a*c,a+b+c,2*v],
+            correction:a+" cubes en longueur, "+b+" en profondeur, "+c+" en hauteur : "+a+" × "+b+" × "+c+" = "+v+(cm?" cm³.":" cubes.")};
+  }};
+
+  // ---------- Formules ----------
+  function pave(h){
+    if(h.rnd(0,3)===0){var c=h.rnd(2,9);return {nom:"un cube d’arête "+c+" cm",v:c*c*c,bons:[c+" × "+c+" × "+c],faux:["6 × "+c,"3 × "+c,c+" × "+c,"12 × "+c,c+" + "+c+" + "+c]}}
+    var L=h.rnd(3,12),l=h.rnd(2,8),H=h.rnd(2,10);
+    return {nom:"un pavé droit de "+L+" cm sur "+l+" cm sur "+H+" cm",v:L*l*H,bons:[L+" × "+l+" × "+H,l+" × "+L+" × "+H,H+" × "+L+" × "+l],
+            faux:[L+" + "+l+" + "+H,L+" × "+l,"2 × ("+L+" + "+l+")",L+" × "+l+" + "+H,"("+L+" + "+l+") × "+H]};
+  }
+  var VOL_CALC={ nom:"Volume : quel calcul ?", gen:function(h){
+    var P=pave(h),bonne=h.choix(P.bons);
+    return {q:"Quel calcul donne le volume d’"+P.nom+" ?",large:true,choix:FIG.qcm(h,bonne,P.bons,P.faux),r:bonne,autres:P.bons.filter(function(x){return x!==bonne}),
+            correction:"Volume = longueur × largeur × hauteur : "+bonne+" = "+nb(P.v)+" cm³."};
+  }};
+  var VOL_VAL={ nom:"Volume : combien ?", gen:function(h){
+    var P=pave(h);
+    return {q:"Quel est le volume d’"+P.nom+" (en cm³) ?",r:P.v,pieges:[P.v*2,Math.round(P.v/2)||P.v+1,P.v+10],correction:P.bons[0]+" = "+nb(P.v)+" cm³."};
+  }};
+
+  // ---------- Unités et contenances ----------
+  var EGALITES=[["1 L","1 dm³"],["1 mL","1 cm³"],["1 m³","1 000 L"],["1 dm³","1 000 cm³"],["1 L","1 000 mL"],["1 L","100 cL"],["1 m³","1 000 dm³"],["1 cL","10 mL"]];
+  var EGALITE={ nom:"Volumes et contenances", gen:function(h){
+    var e=h.choix(EGALITES),g=h.choix([0,1]),bonne=e[1-g];
+    var autres=["1 dm³","1 cm³","1 m³","10 L","100 L","1 000 L","10 mL","100 mL","1 000 mL","100 cm³","1 000 cm³","10 cL","100 cL"].filter(function(x){
+      return !EGALITES.some(function(y){return (y[0]===e[g]&&y[1]===x)||(y[1]===e[g]&&y[0]===x)})});
+    return {q:e[g]+" = ?",choix:h.melange([bonne].concat(h.melange(autres).slice(0,5))),r:bonne,
+            correction:e[0]+" = "+e[1]+". À retenir : 1 L = 1 dm³ et 1 mL = 1 cm³."};
+  }};
+  var OBJETS=[["une cuillère à café","5 mL"],["une canette","33 cL"],["une bouteille d’eau","1,5 L"],["une baignoire","200 L"],["un verre","20 cL"],["une piscine de jardin","10 m³"],["un seau","10 L"],["un flacon de parfum","50 mL"]];
+  var ORDRE={ nom:"Ordre de grandeur", gen:function(h){
+    var o=h.choix(OBJETS),autres=OBJETS.map(function(x){return x[1]}).filter(function(x){return x!==o[1]});
+    return {q:"Quelle est à peu près la contenance d’"+o[0]+" ?",choix:h.melange([o[1]].concat(h.melange(autres).slice(0,5))),r:o[1],correction:o[0].charAt(0).toUpperCase()+o[0].slice(1)+" : environ "+o[1]+"."};
+  }};
+
+  // ---------- Conversions ----------
+  function conv(h){
+    var vol=h.choix([true,false]),T=CONVERSION.TYPES[vol?"volume":"contenance"],k=T.cases,u=T.unites,i,j,n,txt,v;
+    do{i=h.rnd(0,u.length-1);j=h.rnd(Math.max(0,i-(vol?1:3)),Math.min(u.length-1,i+(vol?1:3)));n=N.nombre(h,h.rnd(1,2),h.rnd(0,2));txt=n.e+(n.d?","+n.d:"");v=CONVERSION.convertir(txt,k*(j-i))}
+    while(i===j||v>=1000000||v<.0001);
+    return {type:vol?"volume":"contenance",de:u[i],vers:u[j],txt:txt,v:v,k:k,i:i,j:j};
+  }
+  var CONV_TETE={ nom:"Convertir de tête", gen:function(h){
+    var c=conv(h);
+    return {q:c.txt+" "+c.de+" = … "+c.vers,r:c.v,pieges:[CONVERSION.convertir(c.txt,c.j-c.i),CONVERSION.convertir(c.txt,(c.k===3?2:2)*(c.j-c.i)),CONVERSION.convertir(c.txt,c.k*(c.i-c.j))],
+            correction:(c.k===3?"Pour les volumes, 3 colonnes par unité : 1 m³ = 1 000 dm³. ":"")+c.txt+" "+c.de+" = "+nb(c.v)+" "+c.vers+"."};
+  }};
+  var CONV_TABLEAU={ nom:"Tableau de conversion", gen:function(h){
+    var c=conv(h);
+    return {q:"Convertis : "+O.nw(c.txt+" "+c.de+" = … "+c.vers),r:nb(c.v)+" "+c.vers,widget:CONVERSION.widget(c.type,c.txt,c.de,c.vers),correction:c.txt+" "+c.de+" = "+nb(c.v)+" "+c.vers+"."};
+  }};
+
+  FLASH.chapitre({
+    titre: "Volumes",
+    image: FIG.cubes(2,2,2),
+    nbQuestions: 10,
+    testAuto: false,
+    titres: [{ nom:"Permis volumes", medaille:["PERMIS","VOLUMES","cm³"],
+      serie:{partie:"Test : tout le chapitre",fois:2,minimum:17},
+      condition:"Réussis le test du chapitre (20 questions) 2 fois d’affilée :", bravo:"Tu maîtrises les volumes.", tampon:"Validé" }],
+    sections: [
+      { groupe:"Mesurer un volume", nom:"Compter des cubes", image:FIG.cubes(3,2,2), types:[CUBES] },
+      { groupe:"Mesurer un volume", nom:"Volume : quel calcul ?", image:'<span class="ill-dec">L × l × h</span>', types:[VOL_CALC] },
+      { groupe:"Mesurer un volume", nom:"Volume : combien ?", image:'<span class="ill-dec">V = ?</span>', types:[VOL_VAL] },
+      { groupe:"Unités", nom:"Volumes et contenances", image:'<span class="ill-dec">1 L = 1 dm³</span>', types:[EGALITE,EGALITE,ORDRE] },
+      { groupe:"Unités", nom:"Conversions de tête", image:'<span class="ill-dec">L, mL, cm³</span>', types:[CONV_TETE] },
+      { groupe:"Unités", nom:"Tableau de conversion", image:'<span class="ill-dec">dm³ | cm³</span>', nb:6, types:[CONV_TABLEAU] },
+      { groupe:"Test", nom:"Test : tout le chapitre", commeTest:true, nb:20, image:'<span class="ill-dec">cm³</span>',
+        types:[CUBES,CUBES,CUBES,VOL_CALC,VOL_CALC,VOL_CALC,VOL_VAL,VOL_VAL,VOL_VAL,EGALITE,EGALITE,EGALITE,ORDRE,CONV_TETE,CONV_TETE,CONV_TETE,CONV_TETE,CONV_TABLEAU,CUBES,VOL_CALC] }
+    ]
+  });
+})();
+</script>
+</body>
+</html>
