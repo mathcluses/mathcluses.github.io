@@ -26,7 +26,7 @@
   // un élève pourrait encore voir l'ancienne version. À chaque page, on relit ce fichier-ci SANS cache (petite requête) :
   // si sa VERSION est différente de celle qui tourne, on retélécharge les fichiers de la page et on la recharge, une fois.
   // ► À CHAQUE MISE EN LIGNE : changer VERSION (n'importe quelle valeur nouvelle, par exemple la date et une lettre).
-  var VERSION="2026-11-22d";
+  var VERSION="2026-11-22e";
   (function(){
     var moi=document.currentScript&&document.currentScript.src;
     if(!moi||!window.fetch||location.protocol==="file:")return;
@@ -438,7 +438,7 @@
       $("intro").textContent="Ce chapitre est en préparation : les questions arrivent bientôt.";
       return;
     }
-    $("intro").textContent=sections.length>1?"Touche ce que tu veux travailler (ou ton niveau pour voir tes dernières séries) :":"";
+    $("intro").textContent=sections.length>1?"Choisis un exercice :":"";
 
     // Avec plusieurs parties, on ajoute un « test » qui pioche dans toutes les parties.
     // (un type répété dans une partie, pour régler sa fréquence, ne compte qu'une fois au test ;

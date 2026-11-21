@@ -418,11 +418,15 @@
 
       // rappel des gestes (si l'élève a des instruments à manipuler)
       if(true){
-        var mg=document.createElement("p");mg.className="gb-gestes";
-        mg.innerHTML=(Object.keys(instr).length?"Glisse un instrument pour le déplacer. Pour le tourner : reste appuyé dessus puis tourne, ou utilise une poignée <b>⟳</b>. ":"")+
+        // l'aide aux gestes est repliée (elle prend de la place) ; ouverte d'office les 3 premières fois sur cet appareil
+        var vues=0;try{vues=+localStorage.getItem("flash6|gestes")||0;localStorage.setItem("flash6|gestes",vues+1)}catch(_){}
+        var mg=document.createElement("details");mg.className="gb-gestes";if(vues<3)mg.open=true;
+        mg.addEventListener("click",function(e){e.stopPropagation()});
+        mg.innerHTML="<summary>✋ Comment faire les gestes ?</summary>"+(Object.keys(instr).length?"Glisse un instrument pour le déplacer. Pour le tourner : reste appuyé dessus puis tourne, ou utilise une poignée <b>⟳</b>. ":"")+
           (Object.keys(instr).some(function(k){return INSTRUMENTS[k].bords.length})?"<br><b>Le long d’un bord</b> : "+(outils.indexOf("point")>=0?"touche pour placer un point ; ":"")+"reste appuyé ou glisse pour tracer (le crayon apparaît). ":"")+
           (outils.indexOf("compas")>=0?"<br><b>Compas</b> : choisis l’écartement, touche le centre, puis fais glisser la mine jaune.":"")+
           "<br><b>Relier deux points</b> : touche-les l’un après l’autre, ou glisse de l’un à l’autre.";
+        mg.innerHTML=mg.innerHTML.replace("</summary><br>","</summary>");
         zone.appendChild(mg);
       }
 

@@ -558,3 +558,20 @@ a.chap:hover{border-color:var(--ink);border-left-color:var(--accent)}
 @keyframes leg-pouls{50%{box-shadow:0 0 34px rgba(129,140,248,.7),0 0 10px rgba(34,211,238,.5) inset}}
 @keyframes leg-lueur{50%{box-shadow:0 0 30px rgba(52,211,153,.6)}}
 @media (prefers-reduced-motion:reduce){.titre.legende{animation:none!important}}
+/* aide aux gestes repliable */
+details.gb-gestes summary{cursor:pointer;color:#c7d2fe;font-weight:700;font-size:.9rem;padding:.25rem 0;list-style:none}
+details.gb-gestes summary::-webkit-details-marker{display:none}
+details.gb-gestes summary::after{content:" ▾";color:var(--muted)}
+details.gb-gestes[open] summary::after{content:" ▴"}
+/* Téléphone : accueil de chapitre plus compact (les exercices apparaissent plus vite) et figure plus large */
+@media (max-width:34rem){
+  .titre{padding:.55rem .75rem;gap:.6rem;margin-bottom:.45rem}
+  button.titre{padding:.6rem .8rem}
+  .titre-ill,button.titre .titre-ill,.titre.legende .titre-ill{width:3.6rem;height:3.6rem}
+  .titre-ill .medaille,button.titre .titre-ill .medaille,.titre.legende .titre-ill .medaille{width:3.5rem}
+  .titre-txt b,button.titre .titre-txt b,.titre.legende .titre-txt b{font-size:1.08rem}
+  .titre-txt span{font-size:.8rem}
+  .titre-go{margin-top:.3rem;padding:.25rem .75rem;font-size:.92rem}
+  .card:has(.gb-svg){padding-left:.55rem;padding-right:.55rem}
+  main:has(#carte:not(.hide) .gb-svg){padding-left:.45rem;padding-right:.45rem}
+}
