@@ -96,6 +96,27 @@
             correction:"Le symétrique d’un segment est le segment qui relie les symétriques de ses extrémités : [A’B’], de même longueur."};
   }};
 
+  // symétrique d'une figure usuelle (triangle, rectangle, carré, losange) : placer les symétriques des sommets
+  var FORMES=[["le triangle ABC",[[-1,-.9],[1.1,-.6],[-.2,1]]],["le rectangle ABCD",[[-1.1,-.7],[1.1,-.7],[1.1,.7],[-1.1,.7]]],
+    ["le carré ABCD",[[-.85,-.85],[.85,-.85],[.85,.85],[-.85,.85]]],["le losange ABCD",[[0,-1.2],[.8,0],[0,1.2],[-.8,0]]],["le triangle ABC",[[-.9,.8],[1,1],[.3,-1.1]]]];
+  var SYM_FIG={ nom:"Construire le symétrique d’une figure", gen:function(h){
+    var F=h.choix(FORMES),d,P,S,ok,k=0;
+    do{
+      d=axe(h);var c=h.choix([-1,1]),dist=h.rnd(19,26)/10,dec=h.rnd(-8,8)/10,rot=h.rnd(-30,30),G0=pointCote(h,d,c*dist,dec);
+      P=F[1].map(function(q){return V.add(G0,V.rot(q,rot))});S=P.map(function(q){return V.symetrique(q,d.p,d.q)});
+      ok=P.concat(S).every(function(q){return q[0]>.5&&q[0]<9.5&&q[1]>.5&&q[1]<7}) && P.every(function(q){return V.distDroite(q,d.p,d.q)>.5});
+    }while(!ok&&++k<200);
+    var noms=["A","B","C","D"].slice(0,P.length),pts={},seg=[],noms2=noms.map(function(n){return n+"’"});
+    noms.forEach(function(n,i){pts[n]=P[i];seg.push([n,noms[(i+1)%P.length]])});
+    var corr={points:{},segments:[]};noms2.forEach(function(n,i){corr.points[n]=S[i];corr.segments.push([S[i],S[(i+1)%S.length]])});
+    var vers=S.slice();
+    return {q:"Construis le symétrique de "+F[0]+" par rapport à (d) : place "+noms2.join(", ")+".",r:"figure construite",
+            widget:GEO.tache({compas:{vers:vers},tuto:"symetrique",donnees:{points:pts,segments:seg,droites:[{nom:"(d)",p:d.p,q:d.q}]},outils:["regle","equerre","compas","point"],placer:noms2,
+              aide:"Construis le symétrique de chaque sommet (perpendiculaire à (d) + même distance), puis relie-les (touche un point puis l’autre).",
+              verifier:function(e,G){return Math.max.apply(null,noms2.map(function(n,i){return G.point(e,S[i],n)}))},corrige:corr}),
+            correction:"Chaque sommet a son symétrique de l’autre côté de (d), à la même distance : la figure symétrique a les mêmes longueurs et les mêmes angles."};
+  }};
+
   FLASH.chapitre({
     titre: "Symétrie axiale",
     image: FIG.dessin(3,2,[{poly:[[.2,.3],[1.2,.3],[.6,1.7]],plein:1},{poly:[[2.8,.3],[1.8,.3],[2.4,1.7]],plein:1},{seg:[[1.5,0],[1.5,2]],cls:"fg-axe"}],{px:20}),
@@ -111,6 +132,7 @@
       { groupe:"Propriétés", nom:"Propriétés", affiche:"Propriétés de la symétrie", image:'<span class="ill-dec">médiatrice</span>', types:[PROPRIETES] },
       { groupe:"Construire", nom:"Symétrique d’un point (construction)", tutos:["symetrique"], affiche:"Symétrique d’un point", image:'<span class="ill-dec">📐 A’</span>', nb:5, types:[SYM_POINT] },
       { groupe:"Construire", nom:"Symétrique d’un segment", tutos:["symetrique"], image:'<span class="ill-dec">📐 [A’B’]</span>', nb:5, types:[SYM_SEG] },
+      { groupe:"Construire", nom:"Symétrique d’une figure", tutos:["symetrique"], image:'<span class="ill-dec">△ | △’</span>', nb:4, types:[SYM_FIG] },
       { groupe:"Test", nom:"Test : tout le chapitre", commeTest:true, nb:20, image:'<span class="ill-dec">⇋</span>',
         types:[FIGURES_SYM,FIGURES_SYM,FIGURES_SYM,FIGURES_SYM,POINT_GRILLE,POINT_GRILLE,POINT_GRILLE,POINT_GRILLE,NB_AXES,NB_AXES,NB_AXES,PROPRIETES,PROPRIETES,PROPRIETES,PROPRIETES,FIGURES_SYM,POINT_GRILLE,NB_AXES,SYM_POINT,SYM_SEG] }
     ]

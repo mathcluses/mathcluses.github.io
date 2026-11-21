@@ -7,7 +7,8 @@
 //  La figure est en centimètres (1 unité = 1 cm). L'élève prend les instruments qu'il veut (boutons en haut),
 //  les déplace (glisser), les fait tourner (poignée ⟳), puis :
 //   • près d'un bord de la règle ou de l'équerre : toucher = placer un point, rester appuyé ou glisser = tracer ;
-//   • au compas : choisit l'écartement, touche un point, le compas trace (cercle ou arcs, selon T.compas) ;
+//   • au compas : choisit l'écartement, touche le centre, fait glisser la mine pour tracer (puis le compas se range) ;
+//   • relie deux points sans outil : toucher A puis C, ou glisser de A à C ;
 //   • place un point (outil Point) : il s'accroche aux points et aux intersections proches.
 //  Les instruments sont un peu « aimantés » : ils s'alignent sur les droites et passent par les points
 //  quand ils en sont très près (comme quand on cale l'équerre à la main).
@@ -22,7 +23,7 @@
 //   choix, r : (facultatif) l'élève répond en touchant une proposition (par exemple après avoir mesuré à la règle)
 // ============================================================================
 (function(){
-  var NS="http://www.w3.org/2000/svg",W=10,Hh=7.5,TOL=.2,TOL_ANG=2;   // tolérances : 2 mm et 2°
+  var NS="http://www.w3.org/2000/svg",W=10,Hh=7.5,TOL=.35,TOL_ANG=4;   // tolérances larges (doigt, petit écran) : 3,5 mm et 4°
 
   // ---------- Calcul ----------
   var V={
@@ -82,9 +83,9 @@
         el("path",{d:"M.9 -.6 L3.7 -.6 L.9 -2.45 Z",class:"gi-trou"},g);
         el("path",{d:"M0 -.45 L.45 -.45 L.45 0",class:"gi-angle"},g);
         for(var i=0;i<=55;i++){var x=i/10,h=i%10===0?.3:i%5===0?.2:.11;el("line",{x1:x,y1:0,x2:x,y2:-h,class:"gi-grad"},g);
-          if(i%10===0&&i)el("text",{x:x,y:-.5,class:"gi-num gi-petit"},g).textContent=i/10}
+          if(i%10===0)el("text",{x:x+(i?0:.1),y:-.5,class:"gi-num gi-petit"},g).textContent=i/10}
       },
-      bords:[{a:[0,0],b:[6,0],n:[0,1],zero:0},{a:[0,0],b:[0,-4],n:[-1,0]}], poignees:[[4,-.75],[.75,-2.6]] },
+      bords:[{a:[0,0],b:[6,0],n:[0,1],zero:0},{a:[0,0],b:[0,-4],n:[-1,0]}], poignees:[[2.9,-1.45],[.75,-2.6]] },
     rapporteur:{ nom:"Rapporteur", pivot:[5,7], angle:0,
       dessin:function(g){
         el("path",{d:"M-4.3 0 A4.3 4.3 0 0 1 4.3 0 Z",class:"gi-corps"},g);
@@ -182,17 +183,18 @@
       //  • deux poignées ⟳ (une à chaque bout) le font tourner aussi ;
       //  • sur écran tactile, poignées et bandes de tracé sont plus grandes (un doigt est moins précis qu'une souris).
       var TACTILE=window.matchMedia&&matchMedia("(pointer:coarse)").matches;
-      var R_POIGNEE=TACTILE?.6:.42,BANDE=TACTILE?.4:.22,EPAIS=TACTILE?.75:.42,APPUI=450;
+      var R_POIGNEE=TACTILE?.55:.42,DEHORS=TACTILE?.6:.42,DEDANS=TACTILE?.38:.3,APPUI=600;
       var instr={};
       outils.forEach(function(nom){
         if(!INSTRUMENTS[nom])return;
         var M=INSTRUMENTS[nom],I={nom:nom,x:M.pivot[0],y:M.pivot[1],angle:M.angle,visible:false};
         I.g=el("g",{class:"gi gi-"+nom+" hide"},gInstr);
         I.corps=el("g",{},I.g);M.dessin(I.corps);
-        // bords pour tracer : une bande invisible juste à l'extérieur du bord (plus large au doigt)
+        // bords pour tracer : une bande invisible de part et d'autre du bord (dehors, et un peu sur l'instrument),
+        // plus large au doigt
         I.bords=M.bords.map(function(b){
-          var n=b.n,a=V.add(b.a,V.mul(n,BANDE)),c=V.add(b.b,V.mul(n,BANDE));
-          var z=el("line",{x1:a[0],y1:a[1],x2:c[0],y2:c[1],class:"gi-bord","stroke-width":EPAIS},I.g);
+          var n=b.n,k=(DEHORS-DEDANS)/2,a=V.add(b.a,V.mul(n,k)),c=V.add(b.b,V.mul(n,k));
+          var z=el("line",{x1:a[0],y1:a[1],x2:c[0],y2:c[1],class:"gi-bord","stroke-width":DEHORS+DEDANS},I.g);
           z.addEventListener("pointerdown",function(e){if(fait)return;e.stopPropagation();e.preventDefault();appuiBord(I,b,e)});
           return {b:b,z:z};
         });
@@ -203,6 +205,8 @@
             I.angle=V.ang(V.sub(p,[I.x,I.y]))-V.ang(pg);aimanterAngle(I);placer(I);
           })});
         });
+        // nombres des graduations : au premier plan (devant les poignées) et remis à l'endroit quand on tourne
+        var gN=el("g",{class:"gi-nums"},I.g);I.nums=[].slice.call(I.corps.querySelectorAll(".gi-num"));I.nums.forEach(function(t){gN.appendChild(t)});
         I.corps.addEventListener("pointerdown",function(e){
           if(fait)return;e.stopPropagation();e.preventDefault();
           var p0=pos(e),x0=I.x,y0=I.y,mode="attente",a0=0,r0=0;
@@ -219,31 +223,36 @@
         instr[nom]=I;placer(I);
         bouton(M.nom,"Prendre ou ranger : "+M.nom,function(b){I.visible=!I.visible;I.g.classList.toggle("hide",!I.visible);b.classList.toggle("actif",I.visible)});
       });
-      function placer(I){I.g.setAttribute("transform","translate("+f(I.x)+" "+f(I.y)+") rotate("+f(I.angle)+")")}
+      function placer(I){
+        I.g.setAttribute("transform","translate("+f(I.x)+" "+f(I.y)+") rotate("+f(I.angle)+")");
+        var a=((I.angle%360)+360)%360,renv=a>95&&a<265;
+        if(renv!==I.renv){I.renv=renv;(I.nums||[]).forEach(function(t){
+          if(renv)t.setAttribute("transform","rotate(180 "+t.getAttribute("x")+" "+f(+t.getAttribute("y")-.1)+")");else t.removeAttribute("transform")})}
+      }
       function monde(I,p){return V.add([I.x,I.y],V.rot(p,I.angle))}
       function directions(){return lignes.concat(etat.traits).map(function(l){return V.sub(l[1],l[0])})}
       // l'instrument tourne « tout seul » de quelques degrés pour s'aligner sur une droite (ou lui être perpendiculaire)
       function aimanterAngle(I){
-        var best=null,eMin=3;
+        var best=null,eMin=4;
         directions().forEach(function(d){var a=V.ang(d);[0,90,180,270].forEach(function(k){
           var x=((a+k-I.angle)%360+540)%360-180;if(Math.abs(x)<eMin){eMin=Math.abs(x);best=I.angle+x}})});
         if(best!==null)I.angle=best;
       }
-      // … et se cale contre une droite ou un point tout proche (bord posé sur la droite, bord passant par le point)
+      // … et se cale contre une droite ou un point tout proche (bord posé sur la droite, bord passant par le point) :
+      // on ne garde que la correction la plus petite (une seule), pour que l'instrument reste stable sous le doigt
       function aimanterPosition(I){
         var M=INSTRUMENTS[I.nom],pts=accroches();
         // le pivot (zéro de la règle, angle droit de l'équerre, centre du rapporteur) sur un point
-        var q=plusProche([I.x,I.y],pts,.25);if(q){I.x=q[0];I.y=q[1];return}
+        var q=plusProche([I.x,I.y],pts,.2);if(q){I.x=q[0];I.y=q[1];return}
+        var best=null;
+        function garder(d,n){if(!best||Math.abs(d)<Math.abs(best.d))best={d:d,n:n}}
         M.bords.forEach(function(b){
-          var a=monde(I,b.a),c=monde(I,b.b),u=V.unit(V.sub(c,a)),n=[-u[1],u[0]];
-          // bord sur une droite parallèle toute proche
+          var a=monde(I,b.a),c=monde(I,b.b),u=V.unit(V.sub(c,a)),n=[-u[1],u[0]],L=V.dist(a,c);
           lignes.concat(etat.traits).forEach(function(l){
-            if(V.ecartAngle(u,V.sub(l[1],l[0]))<.6){var d=V.dot(V.sub(l[0],a),n);if(Math.abs(d)<.22&&Math.abs(d)>1e-6){I.x+=n[0]*d;I.y+=n[1]*d}}
-          });
-          // bord passant par un point tout proche
-          pts.forEach(function(p){var d=V.dot(V.sub(p,a),n),t=V.dot(V.sub(p,a),u);
-            if(Math.abs(d)<.18&&Math.abs(d)>1e-6&&t>-.2&&t<V.dist(a,c)+.2){I.x+=n[0]*d;I.y+=n[1]*d}});
+            if(V.dist(l[0],l[1])>.3&&V.ecartAngle(u,V.sub(l[1],l[0]))<1){var d=V.dot(V.sub(l[0],a),n);if(Math.abs(d)<.3)garder(d,n)}});
+          pts.forEach(function(p){var d=V.dot(V.sub(p,a),n),t=V.dot(V.sub(p,a),u);if(Math.abs(d)<.2&&t>-.2&&t<L+.2)garder(d,n)});
         });
+        if(best){I.x+=best.n[0]*best.d;I.y+=best.n[1]*best.d}
       }
       // suivre le doigt (ou la souris) jusqu'à ce qu'il se lève, même s'il sort de la figure :
       // la figure entière « capture » le pointeur (comme le rapporteur)
@@ -282,34 +291,41 @@
         });
       }
 
-      // ----- compas (version simple) : l'élève CHOISIT L'ÉCARTEMENT, puis TOUCHE UN POINT :
-      //   le compas se pose sur ce point et trace tout seul.
-      //   T.compas : {mode:"cercle"} (par défaut) : un cercle entier ;
-      //              {mode:"arcs", vers:[points cherchés]} : des petits arcs vers ceux de ces points qui sont à peu près
-      //              à la bonne distance (si l'écartement est faux, les arcs ne se croisent pas au bon endroit).
+      // ----- compas : 1) on choisit l'écartement ; 2) on touche le centre (un point) : le compas s'y pose ;
+      //   3) on fait glisser la MINE jaune autour : elle trace. Quand on lâche, l'arc reste et le compas se range
+      //   (on reprend « Compas » pour un autre arc : ça évite les fausses manœuvres).
+      //   T.compas : {vers:[points cherchés]} (facultatif) : la mine part en direction du point le plus probable.
       var modeCompas=false,bCompas=null,reglage=null;
       if(outils.indexOf("compas")>=0){
-        var CP=T.compas||{mode:"cercle"},ecart=CP.ecart||3,anime=false;
-        // le compas dessiné (sans prise : il ne se manipule plus à la main)
-        var C={g:el("g",{class:"gi gi-compas hide"},gHaut)};
-        C.j=el("path",{class:"gi-jambes"},C.g);C.hp=el("circle",{r:.3,class:"gi-pointe"},C.g);C.hm=el("circle",{r:.32,class:"gi-mine"},C.g);
+        var CP=T.compas||{},ecart=CP.ecart||3,pose=null;
+        var C={g:el("g",{class:"gi gi-compas hide"},gInstr)};
+        C.j=el("path",{class:"gi-jambes"},C.g);C.hp=el("circle",{r:.3,class:"gi-pointe"},C.g);
         C.ht=el("circle",{r:.3,class:"gi-tete"},C.g);C.et=el("text",{class:"gi-ouv"},C.g);
+        C.hm=el("circle",{r:TACTILE?.55:.4,class:"gi-mine"},C.g);
         var dessinerC=function(P,M){
+          C.P=P;C.M=M;
           var m=V.mul(V.add(P,M),.5),d=V.dist(P,M),u=V.unit(V.sub(M,P)),n=[u[1],-u[0]];if(n[1]>0)n=V.mul(n,-1);
           var t=V.add(m,V.mul(n,Math.max(1.3,3.2-d*.25)));
           C.j.setAttribute("d","M"+f(P[0])+" "+f(P[1])+" L"+f(t[0])+" "+f(t[1])+" L"+f(M[0])+" "+f(M[1]));
           C.hp.setAttribute("cx",f(P[0]));C.hp.setAttribute("cy",f(P[1]));C.hm.setAttribute("cx",f(M[0]));C.hm.setAttribute("cy",f(M[1]));
           C.ht.setAttribute("cx",f(t[0]));C.ht.setAttribute("cy",f(t[1]));C.et.setAttribute("x",f(t[0]));C.et.setAttribute("y",f(t[1]-.45));C.et.textContent=cm(d);
         };
-        var repos=function(){dessinerC([.45,7.1],[.45+ecart,7.1])};     // au repos : en bas à gauche, ouvert à l'écartement choisi
+        var repos=function(){pose=null;C.g.classList.remove("gi-pose");dessinerC([.45,7.1],[.45+ecart,7.1])};   // au repos : en bas à gauche
+        // direction de départ de la mine : vers le point cherché le plus probable (sinon en haut à droite)
+        var angleDepart=function(c){
+          var l=(CP.vers||[]).filter(function(q){return V.dist(c,q)>.3});if(!l.length)return -45;
+          l.sort(function(a,b){return Math.abs(V.dist(c,a)-ecart)-Math.abs(V.dist(c,b)-ecart)});return V.ang(V.sub(l[0],c))-25;
+        };
+        var poser=function(c){pose=c;C.g.classList.add("gi-pose");dessinerC(c,V.add(c,V.mul(V.rot([1,0],angleDepart(c)),ecart)))};
         repos();
         // réglage de l'écartement : − / curseur / +
         reglage=document.createElement("div");reglage.className="gb-reglage hide";
-        reglage.innerHTML='<span class="gb-r-titre">Écartement</span><button type="button" class="gb-b gb-r-moins" aria-label="moins 1 mm">−</button>'+
+        reglage.innerHTML='<span class="gb-r-titre">1. Écartement</span><button type="button" class="gb-b gb-r-moins" aria-label="moins 1 mm">−</button>'+
           '<input type="range" min="0.5" max="8" step="0.1" aria-label="Écartement du compas"><button type="button" class="gb-b gb-r-plus" aria-label="plus 1 mm">+</button>'+
-          '<b class="gb-r-val"></b><span class="gb-r-aide">puis touche un point : le compas trace.</span>';
+          '<b class="gb-r-val"></b><span class="gb-r-aide">2. Touche le centre (un point). 3. Fais glisser la mine <span class="gb-pastille mine"></span> : elle trace.</span>';
         var curseur=reglage.querySelector("input"),val=reglage.querySelector(".gb-r-val");
-        var majEcart=function(x){ecart=Math.max(.5,Math.min(8,Math.round(x*10)/10));curseur.value=ecart;val.textContent=cm(ecart);if(!anime)repos()};
+        var majEcart=function(x){ecart=Math.max(.5,Math.min(8,Math.round(x*10)/10));curseur.value=ecart;val.textContent=cm(ecart);
+          if(pose)dessinerC(pose,V.add(pose,V.mul(V.unit(V.sub(C.M,pose)),ecart)));else repos()};
         majEcart(ecart);
         reglage.addEventListener("click",function(e){e.stopPropagation()});
         reglage.addEventListener("keydown",function(e){e.stopPropagation()});
@@ -317,41 +333,35 @@
         reglage.querySelector(".gb-r-moins").addEventListener("click",function(){majEcart(ecart-.1)});
         reglage.querySelector(".gb-r-plus").addEventListener("click",function(){majEcart(ecart+.1)});
         barre.parentNode.insertBefore(reglage,barre.nextSibling);
-        // les arcs à tracer depuis le centre c
-        var arcsDepuis=function(c){
-          if(CP.mode!=="arcs")return [{a0:-90,bal:360}];
-          var l=(CP.vers||[]).filter(function(q){return V.dist(c,q)>.3}).map(function(q){return {q:q,e:Math.abs(V.dist(c,q)-ecart)}});
-          if(!l.length)return [{a0:-90,bal:360}];
-          var m=Math.min.apply(null,l.map(function(x){return x.e}));
-          return l.filter(function(x){return x.e<1||x.e<m+.3}).map(function(x){return {a0:V.ang(V.sub(x.q,c))-22,bal:44}});
-        };
-        // le compas se pose sur c et trace (animation courte, arc après arc)
-        var tracerAuto=function(c){
-          var l=arcsDepuis(c),i=0,debut=null;anime=true;
-          var arcs=l.map(function(x){return {c:c.slice(),r:ecart,a0:x.a0,bal:0,fin:x.bal}});
-          function image(ts){
-            if(debut===null)debut=ts;var A=arcs[i],dur=Math.abs(A.fin)>=360?1100:550,e=Math.min(1,(ts-debut)/dur);
-            if(e>0&&etat.arcs.indexOf(A)<0)etat.arcs.push(A);
-            A.bal=A.fin*e;dessinerC(c,V.add(c,V.mul(V.rot([1,0],A.a0+A.bal),ecart)));redessiner();
-            if(e<1){requestAnimationFrame(image);return}
-            i++;debut=null;
-            if(i<arcs.length){requestAnimationFrame(image);return}
-            arcs.forEach(function(x){delete x.fin});
-            histoire.push({k:"arcs",n:arcs.length});anime=false;setTimeout(function(){if(!anime)repos()},350);
-          }
-          requestAnimationFrame(image);
-        };
-        // en mode compas, toucher la figure = piquer le compas sur le point le plus proche
+        var ranger=function(){modeCompas=false;bCompas.classList.remove("actif");C.g.classList.add("hide");reglage.classList.add("hide");repos()};
+        // en mode compas, toucher la figure (ailleurs que sur la mine) = poser la pointe sur le point le plus proche
         svg.addEventListener("pointerdown",function(e){
-          if(fait||!modeCompas)return;
-          e.preventDefault();e.stopPropagation();if(anime)return;
+          if(fait||!modeCompas||e.target===C.hm)return;
+          e.preventDefault();e.stopPropagation();
           var c=plusProche(pos(e),accrochesPoint(),TACTILE?.55:.4);
           if(!c){reglage.classList.remove("gb-r-flash");void reglage.offsetWidth;reglage.classList.add("gb-r-flash");return}   // pas de point ici
-          tracerAuto(c);
+          poser(c);
         },true);
+        // la mine : on la fait glisser autour de la pointe, elle trace (l'écartement ne change pas)
+        C.hm.addEventListener("pointerdown",function(e){
+          if(fait||!modeCompas)return;e.stopPropagation();e.preventDefault();
+          if(!pose){reglage.classList.remove("gb-r-flash");void reglage.offsetWidth;reglage.classList.add("gb-r-flash");return}   // d'abord le centre
+          var c=pose,a0=V.ang(V.sub(C.M,c)),prec=V.ang(V.sub(pos(e),c)),arc={c:c.slice(),r:ecart,a0:a0,bal:0};
+          etat.arcs.push(arc);C.g.classList.add("gi-trace");
+          glisser(e,function(p){
+            var a=V.ang(V.sub(p,c)),dlt=((a-prec)%360+540)%360-180;prec=a;arc.bal=Math.max(-360,Math.min(360,arc.bal+dlt));
+            dessinerC(c,V.add(c,V.mul(V.rot([1,0],a0+arc.bal),ecart)));redessiner();
+          },function(){
+            C.g.classList.remove("gi-trace");
+            if(Math.abs(arc.bal)<2){etat.arcs.pop();redessiner();return}
+            histoire.push("arcs");redessiner();ranger();
+          });
+        });
         bCompas=bouton("Compas","Prendre ou ranger le compas",function(b){
-          modeCompas=!modeCompas;b.classList.toggle("actif",modeCompas);C.g.classList.toggle("hide",!modeCompas);reglage.classList.toggle("hide",!modeCompas);
-          if(modeCompas&&modePoint&&bPoint){modePoint=false;bPoint.classList.remove("actif")}
+          if(modeCompas){ranger();return}
+          modeCompas=true;b.classList.add("actif");C.g.classList.remove("hide");reglage.classList.remove("hide");repos();
+          if(modePoint&&bPoint){modePoint=false;bPoint.classList.remove("actif")}
+          choisi=null;majChoix();
         });
       }
 
@@ -359,16 +369,36 @@
       var bPoint=null,modePoint=false;
       if(outils.indexOf("point")>=0){
         bPoint=bouton("✕ Point","Placer un point",function(b){modePoint=!modePoint;b.classList.toggle("actif",modePoint);
-          if(modePoint&&modeCompas)bCompas.click()});
+          if(modePoint&&modeCompas)bCompas.click();choisi=null;majChoix()});
       }
       svg.addEventListener("pointerdown",function(e){
         if(fait||!modePoint||e.target.closest(".gi"))return;
         e.preventDefault();e.stopPropagation();
         var p=pos(e),q=plusProche(p,accrochesPoint(),.3);ajouterPoint(q||p);
       });
+      // relier deux points, sans rien prendre : toucher A puis C (le trait [AC] apparaît),
+      // ou appuyer sur A et glisser jusqu'à C (le crayon suit le doigt)
+      var choisi=null,anneau=el("circle",{r:.36,class:"gb-choix-pt hide"},gHaut);
+      function majChoix(){if(!choisi){anneau.classList.add("hide");return}anneau.classList.remove("hide");anneau.setAttribute("cx",f(choisi[0]));anneau.setAttribute("cy",f(choisi[1]))}
+      svg.addEventListener("pointerdown",function(e){
+        if(fait||modePoint||modeCompas||e.target.closest(".gi"))return;
+        var pts=accrochesPoint(),R=TACTILE?.5:.35,p0=pos(e),a=plusProche(p0,pts,R);
+        if(!a){choisi=null;majChoix();return}
+        e.preventDefault();e.stopPropagation();
+        if(choisi&&V.dist(choisi,a)>.05){etat.traits.push([choisi.slice(),a.slice()]);histoire.push("traits");choisi=null;majChoix();redessiner();return}
+        var trait=null;
+        glisser(e,function(p){
+          if(!trait&&V.dist(p,p0)>.25){trait=[a.slice(),p];etat.traits.push(trait);histoire.push("traits");choisi=null;majChoix()}
+          if(trait){trait[1]=plusProche(p,pts,R*.9)||p;montrerCrayon(trait[1]);redessiner()}
+        },function(){
+          montrerCrayon(null);
+          if(trait){if(V.dist(trait[0],trait[1])<.3){etat.traits.pop();histoire.pop()}redessiner();return}
+          choisi=(choisi&&V.dist(choisi,a)<.05)?null:a;majChoix();       // toucher le même point : on le « lâche »
+        });
+      });
       bouton("↶ Effacer","Effacer le dernier tracé",function(){
         var k=histoire.pop();if(!k)return;
-        if(typeof k==="string")etat[k].pop();else for(var i=0;i<k.n;i++)etat[k.k].pop();   // (le compas peut tracer plusieurs arcs d'un coup)
+        if(typeof k==="string")etat[k].pop();else for(var i=0;i<k.n;i++)etat[k.k].pop();
         redessiner()});
       function majBarre(){
         if(!bPoint)return;var n=aPlacer[etat.points.length];
@@ -387,11 +417,12 @@
       if(T.aide){var pa=document.createElement("p");pa.className="gb-aide";pa.innerHTML=T.aide;zone.insertBefore(pa,barre)}
 
       // rappel des gestes (si l'élève a des instruments à manipuler)
-      if(Object.keys(instr).length||outils.indexOf("compas")>=0){
+      if(true){
         var mg=document.createElement("p");mg.className="gb-gestes";
         mg.innerHTML=(Object.keys(instr).length?"Glisse un instrument pour le déplacer. Pour le tourner : reste appuyé dessus puis tourne, ou utilise une poignée <b>⟳</b>. ":"")+
           (Object.keys(instr).some(function(k){return INSTRUMENTS[k].bords.length})?"<br><b>Le long d’un bord</b> : "+(outils.indexOf("point")>=0?"touche pour placer un point ; ":"")+"reste appuyé ou glisse pour tracer (le crayon apparaît). ":"")+
-          (outils.indexOf("compas")>=0?"<br><b>Compas</b> : choisis l’écartement, puis touche un point : il trace tout seul.":"");
+          (outils.indexOf("compas")>=0?"<br><b>Compas</b> : choisis l’écartement, touche le centre, puis fais glisser la mine jaune.":"")+
+          "<br><b>Relier deux points</b> : touche-les l’un après l’autre, ou glisse de l’un à l’autre.";
         zone.appendChild(mg);
       }
 

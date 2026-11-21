@@ -26,7 +26,7 @@
   // un élève pourrait encore voir l'ancienne version. À chaque page, on relit ce fichier-ci SANS cache (petite requête) :
   // si sa VERSION est différente de celle qui tourne, on retélécharge les fichiers de la page et on la recharge, une fois.
   // ► À CHAQUE MISE EN LIGNE : changer VERSION (n'importe quelle valeur nouvelle, par exemple la date et une lettre).
-  var VERSION="2026-11-22c";
+  var VERSION="2026-11-22d";
   (function(){
     var moi=document.currentScript&&document.currentScript.src;
     if(!moi||!window.fetch||location.protocol==="file:")return;
@@ -591,7 +591,7 @@
     function carteTitre(t,sansBouton){
       var e=etatTitre(t),ok=!!e.date,bouton=(t.test||t.serie)&&!sansBouton;
       var detail=ok?esc(t.bravo||""):esc(t.condition||"")+(t.test?"":t.serie?' <b class="compteur">'+e.compte+" / "+t.serie.fois+"</b>":t.requiert?' <b class="compteur">'+e.faits+" / "+e.total+"</b>":" · "+e.faits+" / "+e.total+" parties faites");
-      return '<'+(bouton?'button type="button" data-titre="'+titres.indexOf(t)+'"':'div')+' class="titre'+(ok?' obtenu':'')+(bouton?' a-passer':'')+(legendaire(t)?' legende':'')+'">'+
+      return '<'+(bouton?'button type="button" data-titre="'+titres.indexOf(t)+'"':'div')+' class="titre'+(ok?' obtenu':'')+(bouton?' a-passer':'')+(legendaire(t)?' legende leg-'+(t.medaille[4]||'feu'):'')+'">'+
         '<span class="titre-ill" aria-hidden="true">'+imageTitre(t)+'</span>'+
         '<span class="titre-txt"><small>'+(ok?"Titre obtenu le "+e.date:"Titre à débloquer")+'</small><b>'+esc(t.nom)+'</b>'+
         '<span>'+detail+'</span>'+(bouton?'<em class="titre-go">'+(ok?"Le repasser":"Passer le test")+' →</em>':'')+'</span>'+

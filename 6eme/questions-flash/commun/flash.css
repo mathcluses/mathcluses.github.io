@@ -540,4 +540,21 @@ a.chap:hover{border-color:var(--ink);border-left-color:var(--accent)}
 .gb-r-aide{width:100%;font-size:.85rem;color:var(--muted)}
 .gb-r-flash{animation:gb-flash .6s}
 @keyframes gb-flash{30%{background:rgba(255,59,78,.3);border-color:#ff3b4e}}
-.gi-compas{pointer-events:none}
+.gi-compas{pointer-events:none}.gi-compas .gi-mine{pointer-events:auto;cursor:grab}
+/* nombres des graduations au premier plan ; poignées ⟳ plus transparentes */
+.gi-nums text{pointer-events:none}
+.gi-poignee circle{fill-opacity:.45}
+/* compas posé : la mine « appelle » le doigt */
+.gi-pose .gi-mine{animation:gi-appel 1.3s ease-in-out infinite}
+/* point choisi pour relier deux points */
+.gb-choix-pt{fill:rgba(56,189,248,.18);stroke:#38bdf8;stroke-width:.06;stroke-dasharray:.12 .08}
+/* légendes : chaque domaine a sa couleur et son animation */
+.titre.legende.leg-plasma{background:linear-gradient(120deg,rgba(10,16,48,.94),rgba(30,10,52,.94)) padding-box,linear-gradient(90deg,#22d3ee,#818cf8,#e879f9,#22d3ee) border-box;
+  background-size:100% 100%,300% 100%;animation:bordfeu 3s linear infinite,leg-pouls 2.4s ease-in-out infinite;color:#c7d2fe}
+.titre.legende.leg-plasma .titre-txt small{color:#67e8f9}.titre.legende.leg-plasma .titre-txt b{color:#e0e7ff}
+.titre.legende.leg-emeraude{background:linear-gradient(120deg,rgba(6,32,26,.94),rgba(10,30,40,.94)) padding-box,linear-gradient(90deg,#34d399,#a3e635,#2dd4bf,#34d399) border-box;
+  background-size:100% 100%,300% 100%;animation:bordfeu 5s linear infinite,leg-lueur 3s ease-in-out infinite;color:#bbf7d0}
+.titre.legende.leg-emeraude .titre-txt small{color:#6ee7b7}.titre.legende.leg-emeraude .titre-txt b{color:#d1fae5}
+@keyframes leg-pouls{50%{box-shadow:0 0 34px rgba(129,140,248,.7),0 0 10px rgba(34,211,238,.5) inset}}
+@keyframes leg-lueur{50%{box-shadow:0 0 30px rgba(52,211,153,.6)}}
+@media (prefers-reduced-motion:reduce){.titre.legende{animation:none!important}}
